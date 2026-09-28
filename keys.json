@@ -2,36 +2,36 @@
  "keys": [
   {
    "sha": "69818b7f021c8565b61887ebe184e3cc8f75bd68617a852651032e466b374101",
-   "hint": "ARABICA-TROU",
-   "label": "key:ARABICA-TROUSpays",
+   "hint": "ARABICA-…",
+   "label": "key:ARABICA-…",
    "active": true,
    "ts": 1790586370
   },
   {
    "sha": "57da9f40b907b90f87008f411889c4bd88c7500dda5a80ad8611a79dd6b6880c",
-   "hint": "CDVK-7Z7Y-WQ39-DMPM",
-   "label": "key:CDVK-7Z7Y-WQ39-DMPMSpays",
+   "hint": "CDVK-…",
+   "label": "key:CDVK-…",
    "active": true,
    "ts": 1790586381
   },
   {
    "sha": "1c2bd94d4520ed373028f2873bd4a006fa70fa389f91b661e6b1b79acbc350d2",
-   "hint": "QJ9G-CNEK-D67Y-KWWS",
-   "label": "key:QJ9G-CNEK-D67Y-KWWSSpays",
+   "hint": "QJ9G-…",
+   "label": "key:QJ9G-…",
    "active": true,
    "ts": 1790586385
   },
   {
    "sha": "06762648504a90f074fe1f37dfd0d931189489f5ac825cafa74935c9f907a048",
-   "hint": "U7RC-9APR-7K66-DAZX",
-   "label": "key:U7RC-9APR-7K66-DAZXSpays",
+   "hint": "U7RC-…",
+   "label": "key:U7RC-…",
    "active": true,
    "ts": 1790586386
   },
   {
    "sha": "a6133fa6ed27d9e7f231822cfe51a00cc7e51591d9a68276e3dbfcaa18f16a7d",
-   "hint": "FULP-HRYQ-R9RG-E7CS",
-   "label": "key:FULP-HRYQ-R9RG-E7CS",
+   "hint": "FULP-…",
+   "label": "key:FULP-…",
    "active": true,
    "ts": 1790586397
   }
