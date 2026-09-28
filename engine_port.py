@@ -5137,13 +5137,16 @@ class AimbotCon {
         return GetAllTargets.getPlayerById(this.myId()).active === false;
     }
     getSelf() {
-        if (GetAllTargets.cameraCenter && (GetAllTargets.cameraCenter.x !== 0 || GetAllTargets.cameraCenter.y !== 0))
-            return GetAllTargets.cameraCenter;
+        // the body position decoded from our own entity packet is the only
+        // true aim origin — the canvas center drifts off-body when the camera
+        // is not centered on the player (mobile scaling, map edges)
         if (GetAllTargets.selfFromPacket && Date.now() - GetAllTargets.selfFromPacket < 2000)
             return GetAllTargets.selfPosition;
         var sid = this.myId();
         if (sid > 0 && GetAllTargets.players[sid] && GetAllTargets.players[sid].active)
             return GetAllTargets.players[sid];
+        if (GetAllTargets.cameraCenter && (GetAllTargets.cameraCenter.x !== 0 || GetAllTargets.cameraCenter.y !== 0))
+            return GetAllTargets.cameraCenter;
         return GetAllTargets.selfPosition;
     }
     isSelf(t) {
