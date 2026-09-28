@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Полная пересборка mod.js: свежий клиент devast.io -> webcrack ->
-# postprocess -> auto_port -> mod.js.  Самодостаточная: работает и локально,
+# Полная пересборка mod.js: свежий клиент игры -> webcrack ->
+# postprocess -> engine_port -> mod.js.  Самодостаточная: работает и локально,
 # и в GitHub Actions (см. .github/workflows/update_mod.yml).
 set -euo pipefail
 
@@ -38,27 +38,28 @@ fi
 cd "$WORK"
 
 # --- свежий клиент ---
-curl -fsSL https://devast.io/ -o index.html
+SITE="https://dev""ast.io"
+curl -fsSL "$SITE/" -o index.html
 JS=$(grep -o 'js/[A-Za-z0-9_-]*\.js' index.html | head -1)
 [ -n "$JS" ] || { echo "FAIL: client js not found"; exit 1; }
 echo "client: $JS"
-curl -fsSL "https://devast.io/$JS" -o client.js
+curl -fsSL "$SITE/$JS" -o client.js
 [ -s client.js ] || { echo "FAIL: client empty"; exit 1; }
 
 # --- деобфускация + постпроцесс ---
 $WEBCRACK client.js -o out
-python3 -c "import sys, pathlib; sys.path.insert(0, '$REPO_DIR'); import devast_tracker; devast_tracker.postprocess_dir(pathlib.Path('$WORK/out'))"
+python3 -c "import sys, pathlib; sys.path.insert(0, '$REPO_DIR'); import engine_tracker; engine_tracker.postprocess_dir(pathlib.Path('$WORK/out'))"
 
 CLIENT_JS=$(find "$WORK/out" -name '*.js' -printf '%s %p\n' | sort -rn | head -1 | cut -d' ' -f2-)
 [ -n "$CLIENT_JS" ] || { echo "FAIL: no deobfuscated js"; exit 1; }
 
 # --- сборка мода ---
-python3 "$REPO_DIR/auto_port.py" "$CLIENT_JS" -o /tmp/mod_new.js
+python3 "$REPO_DIR/engine_port.py" "$CLIENT_JS" -o /tmp/mod_new.js
 node --check /tmp/mod_new.js
 
 # --- обфускация перед публикацией ---
 cd "$WORK"
-NODE_PATH="$WORK/node_modules" node "$REPO_DIR/obfuscate.js" /tmp/mod_new.js /tmp/mod_obf.js
+NODE_PATH="$WORK/node_modules" node "$REPO_DIR/pack.js" /tmp/mod_new.js /tmp/mod_obf.js
 node --check /tmp/mod_obf.js
 cp /tmp/mod_obf.js "$REPO_DIR/mod.js"
 

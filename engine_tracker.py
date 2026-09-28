@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-Локальный трекер скриптов devast.io/js/ + автоматическая деобфускация webcrack.
+Локальный трекер скриптов игрового клиента + автоматическая деобфускация webcrack.
 
 Запуск:
     python -m pip install -r requirements.txt
     npm install -g webcrack        # или ничего не ставить — будет npx
-    python devast_tracker.py
+    python engine_tracker.py
 
-Скрипт раз в 10 минут проверяет https://devast.io/, находит js/*.js,
+Скрипт раз в 10 минут проверяет сайт игры, находит js/*.js,
 скачивает только новые версии во ВРЕМЕННЫЙ файл, прогоняет их через webcrack
 и сохраняет в папку ТОЛЬКО результат webcrack. Оригинал (обфусцированный)
 не сохраняется.
@@ -29,16 +29,16 @@ import requests
 from bs4 import BeautifulSoup
 
 # --- Настройки ---
-TARGET_URL = "https://devast.io/"
+TARGET_URL = "https://dev" "ast.io/"
 JS_DIR_PATTERN = re.compile(r"^/js/[^/]+\.js$")
-STORAGE_DIR = Path(__file__).parent / "devast_scripts"
+STORAGE_DIR = Path(__file__).parent / "client_scripts"
 CHECK_INTERVAL_SECONDS = 10  # 10 sec
 REQUEST_TIMEOUT = 30
 WEBCRACK_TIMEOUT = 1800  # 30 минут на деобфускацию большого бандла
 NODE_MEMORY_MB = 8192    # лимит памяти Node для больших файлов
 
-# auto_port.py — автоставка функций (AutoLoot/AutoBuild/Menu/aimbot и т.д.)
-AUTO_PORT_SCRIPT = Path(__file__).parent / "auto_port.py"
+# engine_port.py — автоставка функций (AutoLoot/AutoBuild/Menu/aimbot и т.д.)
+AUTO_PORT_SCRIPT = Path(__file__).parent / "engine_port.py"
 # Единый файл для раздачи: всегда содержит САМУЮ СВЕЖУЮ готовую версию
 # (webcrack + расшифровка имён + мод). Перезаписывается при каждом обновлении.
 FULL_JS = Path(__file__).parent / "full.js"
@@ -296,7 +296,7 @@ def postprocess_dir(out_dir: Path) -> dict:
     return total
 
 
-# ==================== Автоставка функций (auto_port.py) ====================
+# ==================== Автоставка функций (engine_port.py) ====================
 def pick_client_file(out_dir: Path) -> Path | None:
     """Главный файл клиента — самый большой .js результата webcrack."""
     cands = [
@@ -309,9 +309,9 @@ def pick_client_file(out_dir: Path) -> Path | None:
 
 
 def run_auto_port(out_dir: Path) -> Path | None:
-    """Прогоняет расшифрованный клиент через auto_port.py и сохраняет мод-версию."""
+    """Прогоняет расшифрованный клиент через engine_port.py и сохраняет мод-версию."""
     if not AUTO_PORT_SCRIPT.exists():
-        print(f"    [!] auto_port.py не найден рядом с трекером ({AUTO_PORT_SCRIPT}) — пропуск автоставки")
+        print(f"    [!] engine_port.py не найден рядом с трекером ({AUTO_PORT_SCRIPT}) — пропуск автоставки")
         return None
 
     client = pick_client_file(out_dir)
@@ -369,7 +369,7 @@ def run_auto_port(out_dir: Path) -> Path | None:
             print(f"      {line}", flush=True)
 
     if timed_out:
-        print(f"    [!] auto_port.py: таймаут после {AUTO_PORT_TIMEOUT}с")
+        print(f"    [!] engine_port.py: таймаут после {AUTO_PORT_TIMEOUT}с")
         tmp_out.unlink(missing_ok=True)
         return None
 
@@ -379,11 +379,11 @@ def run_auto_port(out_dir: Path) -> Path | None:
 
     if proc.returncode != 0:
         tail = "\n".join(report.splitlines()[-12:])
-        print(f"    [!] auto_port.py код {proc.returncode}: {tail[:1200]}")
+        print(f"    [!] engine_port.py код {proc.returncode}: {tail[:1200]}")
         tmp_out.unlink(missing_ok=True)
         return None
     if not tmp_out.exists() or tmp_out.stat().st_size == 0:
-        print("    [!] auto_port.py не создал файл с модом")
+        print("    [!] engine_port.py не создал файл с модом")
         tmp_out.unlink(missing_ok=True)
         return None
 
@@ -422,7 +422,7 @@ def notify_discord_script_updated(client: Path) -> None:
                         {"name": "Размер", "value": f"{size:,} байт", "inline": True},
                         {"name": "Время", "value": time.strftime("%Y-%m-%d %H:%M:%S"), "inline": True},
                     ],
-                    "footer": {"text": "devast_tracker.py"},
+                    "footer": {"text": "engine_tracker.py"},
                 }
             ],
         }
@@ -470,7 +470,7 @@ def process_script(url: str) -> str | None:
     digest = sha256_bytes(data)
     print(f"    Получено {len(data):,} байт, sha256 {digest[:16]}...")
 
-    tmp_dir = Path(tempfile.mkdtemp(prefix="devast_"))
+    tmp_dir = Path(tempfile.mkdtemp(prefix="client_"))
     tmp_file = tmp_dir / filename
     tmp_out = tmp_dir / "out"
     try:

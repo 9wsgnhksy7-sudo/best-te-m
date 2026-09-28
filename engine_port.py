@@ -3,9 +3,9 @@
 Full auto-port: detect vars -> generate AutoLoot/AutoBuild + Open/Spam/Nicks/List/Menu mod -> inject.
 
 Usage:
-  python3 auto_port.py <new_client.js> [-o out.js]
-  python3 auto_port.py <new_client.js> --report-only
-  python3 auto_port.py <new_client.js> --override loot=NAME --override build.rot=NAME
+  python3 engine_port.py <new_client.js> [-o out.js]
+  python3 engine_port.py <new_client.js> --report-only
+  python3 engine_port.py <new_client.js> --override loot=NAME --override build.rot=NAME
 """
 from __future__ import annotations
 import argparse
@@ -5326,54 +5326,64 @@ class AimbotCon {
             return this.lastAngle;
         }
         var spd = MOD.spearSpeed || 46.5;
-        var px, py;
-        if (target.prevX[0] === -1) {
-            px = target.x;
-            py = target.y;
-        } else {
-            var updS = 62 / (target.updDt || 62);
-            // smoothed target velocity: average the last two observed deltas
-            // to cut 62ms-snapshot jitter.
+        var fwd = MOD.spearHandFwd || 22;
+        var side = MOD.spearHandSide || -39;
+        var px = target.x, py = target.y;
+        var t = 0;
+        // the spear launches from the hand ~{fwd,side}px off the player
+        // center, rotated by the aim angle — iterate: solve the intercept
+        // from the spawn point, then recompute spawn for the new angle.
+        var updS = 62 / (target.updDt || 62);
+        var tvx = 0, tvy = 0;
+        if (target.prevX[0] !== -1) {
             var d1x = target.x - target.prevX[0], d1y = target.y - target.prevY[0];
-            var tvx = d1x, tvy = d1y;
+            tvx = d1x; tvy = d1y;
             if (target.prevX[1] !== -1) {
                 tvx = (d1x + target.prevX[0] - target.prevX[1]) * 0.5;
                 tvy = (d1y + target.prevY[0] - target.prevY[1]) * 0.5;
             }
             tvx *= updS;
             tvy *= updS;
-            var st = (typeof target.staleT === "function") ? target.staleT() : 0;
-            var dx = target.x + tvx * st - me.x;
-            var dy = target.y + tvy * st - me.y;
+        }
+        var st = (typeof target.staleT === "function") ? target.staleT() : 0;
+        var rad = Math.atan2(target.y - me.y, target.x - me.x);
+        for (var it = 0; it < 3; it++) {
+            var cs = Math.cos(rad), sn = Math.sin(rad);
+            var sx = me.x + cs * fwd - sn * side;
+            var sy = me.y + sn * fwd + cs * side;
+            var dx = target.x + tvx * st - sx;
+            var dy = target.y + tvy * st - sy;
             // spear flies straight at a constant ~0.75px/ms (def field);
             // solve |d + v*t| = s*t for the smallest positive t.
             var qa = tvx * tvx + tvy * tvy - spd * spd;
             var qb = 2 * (dx * tvx + dy * tvy);
             var qc = dx * dx + dy * dy;
-            var t = -1;
+            var tN = -1;
             if (Math.abs(qa) < 0.000001) {
-                if (Math.abs(qb) > 0.000001) t = -qc / qb;
+                if (Math.abs(qb) > 0.000001) tN = -qc / qb;
             } else {
                 var disc = qb * qb - 4 * qa * qc;
                 if (disc >= 0) {
                     var sd = Math.sqrt(disc);
                     var t1 = (-qb - sd) / (2 * qa), t2 = (-qb + sd) / (2 * qa);
-                    if (t1 > 0 && t2 > 0) t = Math.min(t1, t2);
-                    else t = Math.max(t1, t2);
+                    if (t1 > 0 && t2 > 0) tN = Math.min(t1, t2);
+                    else tN = Math.max(t1, t2);
                 }
             }
-            if (!(t > 0)) t = Math.sqrt(qc) / spd;
+            if (!(tN > 0)) tN = Math.sqrt(qc) / spd;
+            t = tN;
             px = target.x + tvx * (st + t);
             py = target.y + tvy * (st + t);
-            // spear dies after ~600px (def path) — don't aim beyond its range
-            if (t * spd > 590) {
-                this.currentTarget = null;
-                GetAllTargets.lines[0].reset();
-                GetAllTargets.lines[1].reset();
-                return this.lastAngle;
-            }
+            rad = Math.atan2(py - sy, px - sx);
         }
-        var angle = Math.floor(Math.atan2(py - me.y, px - me.x) * AIM_RAD);
+        // spear dies after ~600px (def path) — don't aim beyond its range
+        if (t * spd > 590) {
+            this.currentTarget = null;
+            GetAllTargets.lines[0].reset();
+            GetAllTargets.lines[1].reset();
+            return this.lastAngle;
+        }
+        var angle = Math.floor(rad * AIM_RAD);
         angle = ((angle % 360) + 360) % 360;
         this.lastAngle = angle;
         try {
@@ -5443,6 +5453,8 @@ var MOD = {
     AimbotSpearEnabled: false,
     spearSpeed: 46.5,
     spearMaxRange: 560,
+    spearHandFwd: 22,
+    spearHandSide: -39,
     hideAimbotAngle: false,
     hidePlayerAngle: false,
     target: "players",
@@ -5563,7 +5575,7 @@ function aimbotTick() {
     try {
         aimbotTick();
     } catch (e) {}
-    setTimeout(aimbotLoop, MOD.AimBotEnabled || MOD.AntiAimbot ? 50 : 200);
+    setTimeout(aimbotLoop, MOD.AimBotEnabled || MOD.AntiAimbot || MOD.AimbotSpearEnabled ? 50 : 200);
 })();
 function __isMyAimbotPlayer(o, id) {
     var my = World.PLAYER[__TOK_MYID__];
@@ -5762,6 +5774,8 @@ function AimbotMenuInit() {
     spearFolder.add(MOD, "AimbotSpearEnabled").name("AimbotSpearEnabled");
     spearFolder.add(MOD, "spearSpeed", 20, 60, 0.5).name("SpearSpeed");
     spearFolder.add(MOD, "spearMaxRange", 200, 600, 10).name("MaxRange");
+    spearFolder.add(MOD, "spearHandFwd", -60, 60, 1).name("HandFwd");
+    spearFolder.add(MOD, "spearHandSide", -60, 60, 1).name("HandSide");
     spearFolder.add(MOD, "autoFire").name("AutoThrow");
     const antiFolder = menu.addFolder("Anti-Aim / Strafe");
     antiFolder.add(MOD, "AntiAimbot").name("StrafeEnable");
