@@ -54,8 +54,12 @@ python3 "$REPO_DIR/auto_port.py" "$CLIENT_JS" -o /tmp/mod_new.js
 node --check /tmp/mod_new.js
 cp /tmp/mod_new.js "$REPO_DIR/mod.js"
 
+# маркер версии клиента — по нему workflow решает, пересобирать ли
+mkdir -p "$REPO_DIR/state"
+sha256sum "$WORK/client.js" | cut -d' ' -f1 > "$REPO_DIR/state/client.sha256"
+
 cd "$REPO_DIR"
-git add mod.js
+git add mod.js state/client.sha256
 if git diff --cached --quiet; then
   echo "mod.js unchanged"
 else
