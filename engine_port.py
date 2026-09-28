@@ -5193,6 +5193,12 @@ class AimbotCon {
         }
         return best;
     }
+    pickTarget(me) {
+        var mc = GetAllTargets.mouseMapCords;
+        if (mc && (mc.x !== 0 || mc.y !== 0))
+            return this.findTarget(mc, MOD.aimCursorRadius || 3000);
+        return this.findTarget(me, 2500);
+    }
     resolve() {
         var me = this.getSelf();
         var target;
@@ -5201,12 +5207,7 @@ class AimbotCon {
             if (MOD.lockId > -1 && MOD.lockId !== this.myId() && GetAllTargets.players[MOD.lockId] && GetAllTargets.players[MOD.lockId].active) {
                 target = GetAllTargets.players[MOD.lockId];
             } else {
-                var mc = GetAllTargets.mouseMapCords;
-                if (mc && (mc.x !== 0 || mc.y !== 0)) {
-                    target = this.findTarget(mc, MOD.aimCursorRadius || 3000);
-                } else {
-                    target = this.findTarget(me, 2500);
-                }
+                target = this.pickTarget(me);
             }
             this.currentTarget = target;
             if (target == null) {
@@ -5217,7 +5218,7 @@ class AimbotCon {
             px = target.x;
             py = target.y;
         } else if (MOD.resolverType === "none" || MOD.resolverType === 1 || MOD.resolverType === "1") {
-            target = this.findTarget(me, 2500);
+            target = this.pickTarget(me);
             if (target == null) {
                 GetAllTargets.lines[0].reset();
                 GetAllTargets.lines[1].reset();
@@ -5235,10 +5236,8 @@ class AimbotCon {
         } else if (MOD.resolverType === "trigonometrical") {
             if (MOD.lockId > -1 && MOD.lockId !== this.myId() && GetAllTargets.players[MOD.lockId] && GetAllTargets.players[MOD.lockId].active) {
                 target = GetAllTargets.players[MOD.lockId];
-            } else if (MOD.mouseFovEnable) {
-                target = this.findTarget(GetAllTargets.mouseMapCords, MOD.mouseFov);
             } else {
-                target = this.findTarget(me, 2500);
+                target = this.pickTarget(me);
             }
             this.currentTarget = target;
             if (target == null) {
@@ -5276,10 +5275,8 @@ class AimbotCon {
         } else {
             if (MOD.lockId > -1 && MOD.lockId !== this.myId() && GetAllTargets.players[MOD.lockId] && GetAllTargets.players[MOD.lockId].active) {
                 target = GetAllTargets.players[MOD.lockId];
-            } else if (MOD.mouseFovEnable) {
-                target = this.findTarget(GetAllTargets.mouseMapCords, MOD.mouseFov);
             } else {
-                target = this.findTarget(me, 2500);
+                target = this.pickTarget(me);
             }
             this.currentTarget = target;
             if (target == null) {
@@ -5336,10 +5333,8 @@ class AimbotCon {
         var target;
         if (MOD.lockId > -1 && MOD.lockId !== this.myId() && GetAllTargets.players[MOD.lockId] && GetAllTargets.players[MOD.lockId].active) {
             target = GetAllTargets.players[MOD.lockId];
-        } else if (MOD.mouseFovEnable) {
-            target = this.findTarget(GetAllTargets.mouseMapCords, MOD.mouseFov);
         } else {
-            target = this.findTarget(me, Math.min(2500, MOD.spearMaxRange || 560));
+            target = this.pickTarget(me);
         }
         this.currentTarget = target;
         if (target == null) {
