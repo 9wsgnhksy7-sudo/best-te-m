@@ -5203,11 +5203,16 @@ class AimbotCon {
             } else if (MOD.mouseFovEnable) {
                 target = this.findTarget(GetAllTargets.mouseMapCords, MOD.mouseFov);
             } else {
+                var best = this.findTarget(me, 2500);
                 var prev = this.currentTarget;
-                if (prev && prev.active && !this.isSelf(prev) && calculateDistance(me, prev) < 2500) {
-                    target = prev; // sticky target: the aim line stays glued to one player instead of flicking
+                // soft stick: keep the current target only until another
+                // enemy is clearly closer — lets the player switch targets
+                // while the line does not flicker between equals
+                if (prev && prev !== best && prev.active && !this.isSelf(prev) &&
+                    calculateDistance(me, prev) < (best ? calculateDistance(me, best) : 2500) + 150) {
+                    target = prev;
                 } else {
-                    target = this.findTarget(me, 2500);
+                    target = best;
                 }
             }
             this.currentTarget = target;
