@@ -5200,16 +5200,17 @@ class AimbotCon {
         if (MOD.exactAim) {
             if (MOD.lockId > -1 && MOD.lockId !== this.myId() && GetAllTargets.players[MOD.lockId] && GetAllTargets.players[MOD.lockId].active) {
                 target = GetAllTargets.players[MOD.lockId];
-            } else if (MOD.mouseFovEnable) {
-                target = this.findTarget(GetAllTargets.mouseMapCords, MOD.mouseFov);
             } else {
                 var prev = this.currentTarget;
                 // cursor pick: aim at whoever is nearest the mouse cursor;
-                // fall back to the closest enemy when none is under it
+                // fall back to the closest enemy when none is under it.
+                // (mouseFovEnable is intentionally ignored here — on touch
+                // devices the "cursor" is the last tap, e.g. the joystick)
                 var best = null;
                 var fromCursor = false;
-                if (MOD.aimAtCursor && GetAllTargets.mouseMapCords) {
-                    best = this.findTarget(GetAllTargets.mouseMapCords, MOD.aimCursorRadius || 400);
+                var mc = GetAllTargets.mouseMapCords;
+                if (MOD.aimAtCursor && mc && (mc.x !== 0 || mc.y !== 0)) {
+                    best = this.findTarget(mc, MOD.aimCursorRadius || 400);
                     fromCursor = best != null;
                 }
                 if (!best)
@@ -5247,8 +5248,9 @@ class AimbotCon {
                 etvx *= eupdS;
                 etvy *= eupdS;
                 // hitscan: the server raycasts when the fire packet lands, so
-                // lead = snapshot staleness + one-way transit (aimLagMs)
-                var lagT = target.staleT() + (MOD.aimLagMs || 110) / 62;
+                // lead = snapshot staleness + one-way transit (aimLagMs);
+                // stale snapshots (>8 ticks) carry no reliable velocity info
+                var lagT = Math.min(target.staleT(), 8) + (MOD.aimLagMs || 110) / 62;
                 // relative velocity: while we strafe the shot origin moves too,
                 // so lead by (target vel - our vel), not the raw target vel
                 var svx = 0, svy = 0;
@@ -5268,8 +5270,18 @@ class AimbotCon {
                     svx *= supdS;
                     svy *= supdS;
                 }
-                px = target.x + (etvx - svx) * lagT;
-                py = target.y + (etvy - svy) * lagT;
+                var lvx = (etvx - svx) * lagT;
+                var lvy = (etvy - svy) * lagT;
+                // clamp the lead so packet jitter/teleports can't fling the
+                // aim point far off the target
+                var lm = Math.sqrt(lvx * lvx + lvy * lvy);
+                var maxLead = MOD.aimMaxLead || 160;
+                if (lm > maxLead) {
+                    lvx = lvx / lm * maxLead;
+                    lvy = lvy / lm * maxLead;
+                }
+                px = target.x + lvx;
+                py = target.y + lvy;
             }
         } else if (MOD.resolverType === "none" || MOD.resolverType === 1 || MOD.resolverType === "1") {
             target = this.findTarget(me, 2500);
@@ -5551,6 +5563,7 @@ var MOD = {
     aimLagMs: 110,
     aimAtCursor: true,
     aimCursorRadius: 400,
+    aimMaxLead: 160,
     target: "players",
     TargetTeammate: false,
     resolverType: "linear",
@@ -5855,6 +5868,7 @@ function AimbotMenuInit() {
     aimFolder.add(MOD, "aimLagMs", 0, 400, 5).name("AimLagMs");
     aimFolder.add(MOD, "aimAtCursor").name("AimAtCursor");
     aimFolder.add(MOD, "aimCursorRadius", 50, 2000, 50).name("CursorRadius");
+    aimFolder.add(MOD, "aimMaxLead", 0, 400, 10).name("MaxLead");
     aimFolder.add(MOD, "target", ["players", "ghouls", "all"]).name("Target");
     aimFolder.add(MOD, "TargetTeammate").name("TargetTeammate");
     aimFolder.add(MOD, "resolverType", ["linear", "trigonometrical", "none"]).name("ResolverType");
