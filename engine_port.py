@@ -5197,93 +5197,7 @@ class AimbotCon {
         var me = this.getSelf();
         var target;
         var px, py;
-        if (MOD.exactAim) {
-            if (MOD.lockId > -1 && MOD.lockId !== this.myId() && GetAllTargets.players[MOD.lockId] && GetAllTargets.players[MOD.lockId].active) {
-                target = GetAllTargets.players[MOD.lockId];
-            } else {
-                var prev = this.currentTarget;
-                // cursor pick: aim at whoever is nearest the mouse cursor;
-                // fall back to the closest enemy when none is under it.
-                // (mouseFovEnable is intentionally ignored here — on touch
-                // devices the "cursor" is the last tap, e.g. the joystick)
-                var best = null;
-                var fromCursor = false;
-                var mc = GetAllTargets.mouseMapCords;
-                if (MOD.aimAtCursor && mc && (mc.x !== 0 || mc.y !== 0)) {
-                    best = this.findTarget(mc, MOD.aimCursorRadius || 400);
-                    fromCursor = best != null;
-                }
-                if (!best)
-                    best = this.findTarget(me, 2500);
-                // soft stick only for the nearest-enemy fallback: the cursor
-                // pick always wins so the player can switch targets freely
-                if (!fromCursor && prev && prev !== best && prev.active && !this.isSelf(prev) &&
-                    calculateDistance(me, prev) < (best ? calculateDistance(me, best) : 2500) + 150) {
-                    target = prev;
-                } else {
-                    target = best;
-                }
-            }
-            this.currentTarget = target;
-            if (target == null) {
-                GetAllTargets.lines[0].reset();
-                GetAllTargets.lines[1].reset();
-                return this.lastAngle;
-            }
-            px = target.x;
-            py = target.y;
-            if (target.prevX[0] !== -1) {
-                var eupdS = 62 / (target.updDt || 62);
-                var etvx, etvy;
-                if (target.prevX[2] !== -1) {
-                    etvx = (target.x - target.prevX[2]) / 3;
-                    etvy = (target.y - target.prevY[2]) / 3;
-                } else if (target.prevX[1] !== -1) {
-                    etvx = (target.x - target.prevX[1]) * 0.5;
-                    etvy = (target.y - target.prevY[1]) * 0.5;
-                } else {
-                    etvx = target.x - target.prevX[0];
-                    etvy = target.y - target.prevY[0];
-                }
-                etvx *= eupdS;
-                etvy *= eupdS;
-                // hitscan: the server raycasts when the fire packet lands, so
-                // lead = snapshot staleness + one-way transit (aimLagMs);
-                // stale snapshots (>8 ticks) carry no reliable velocity info
-                var lagT = Math.min(target.staleT(), 8) + (MOD.aimLagMs || 110) / 62;
-                // relative velocity: while we strafe the shot origin moves too,
-                // so lead by (target vel - our vel), not the raw target vel
-                var svx = 0, svy = 0;
-                var meT = GetAllTargets.players[this.myId()];
-                if (meT && meT.prevX && meT.prevX[0] !== -1 && meT !== target) {
-                    var supdS = 62 / (meT.updDt || 62);
-                    if (meT.prevX[2] !== -1) {
-                        svx = (meT.x - meT.prevX[2]) / 3;
-                        svy = (meT.y - meT.prevY[2]) / 3;
-                    } else if (meT.prevX[1] !== -1) {
-                        svx = (meT.x - meT.prevX[1]) * 0.5;
-                        svy = (meT.y - meT.prevY[1]) * 0.5;
-                    } else {
-                        svx = meT.x - meT.prevX[0];
-                        svy = meT.y - meT.prevY[0];
-                    }
-                    svx *= supdS;
-                    svy *= supdS;
-                }
-                var lvx = (etvx - svx) * lagT;
-                var lvy = (etvy - svy) * lagT;
-                // clamp the lead so packet jitter/teleports can't fling the
-                // aim point far off the target
-                var lm = Math.sqrt(lvx * lvx + lvy * lvy);
-                var maxLead = MOD.aimMaxLead || 160;
-                if (lm > maxLead) {
-                    lvx = lvx / lm * maxLead;
-                    lvy = lvy / lm * maxLead;
-                }
-                px = target.x + lvx;
-                py = target.y + lvy;
-            }
-        } else if (MOD.resolverType === "none" || MOD.resolverType === 1 || MOD.resolverType === "1") {
+        if (MOD.resolverType === "none" || MOD.resolverType === 1 || MOD.resolverType === "1") {
             target = this.findTarget(me, 2500);
             if (target == null) {
                 GetAllTargets.lines[0].reset();
@@ -5559,11 +5473,6 @@ var MOD = {
     spearStabDeg: 2.5,
     hideAimbotAngle: false,
     hidePlayerAngle: false,
-    exactAim: true,
-    aimLagMs: 110,
-    aimAtCursor: true,
-    aimCursorRadius: 400,
-    aimMaxLead: 160,
     target: "players",
     TargetTeammate: false,
     resolverType: "linear",
@@ -5864,11 +5773,6 @@ function AimbotMenuInit() {
     __TOK_WINDOW__.AimbotMenu = menu;
     const aimFolder = menu.addFolder("👑 Aim Bot 👑");
     aimFolder.add(MOD, "AimBotEnabled").name("AimBotEnabled");
-    aimFolder.add(MOD, "exactAim").name("ExactAim (no-miss)");
-    aimFolder.add(MOD, "aimLagMs", 0, 400, 5).name("AimLagMs");
-    aimFolder.add(MOD, "aimAtCursor").name("AimAtCursor");
-    aimFolder.add(MOD, "aimCursorRadius", 50, 2000, 50).name("CursorRadius");
-    aimFolder.add(MOD, "aimMaxLead", 0, 400, 10).name("MaxLead");
     aimFolder.add(MOD, "target", ["players", "ghouls", "all"]).name("Target");
     aimFolder.add(MOD, "TargetTeammate").name("TargetTeammate");
     aimFolder.add(MOD, "resolverType", ["linear", "trigonometrical", "none"]).name("ResolverType");
