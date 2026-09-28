@@ -5201,7 +5201,12 @@ class AimbotCon {
             if (MOD.lockId > -1 && MOD.lockId !== this.myId() && GetAllTargets.players[MOD.lockId] && GetAllTargets.players[MOD.lockId].active) {
                 target = GetAllTargets.players[MOD.lockId];
             } else {
-                target = this.findTarget(me, 2500);
+                var mc = GetAllTargets.mouseMapCords;
+                if (mc && (mc.x !== 0 || mc.y !== 0)) {
+                    target = this.findTarget(mc, MOD.aimCursorRadius || 3000);
+                } else {
+                    target = this.findTarget(me, 2500);
+                }
             }
             this.currentTarget = target;
             if (target == null) {
@@ -5490,6 +5495,7 @@ var MOD = {
     target: "players",
     TargetTeammate: false,
     resolverType: "center",
+    aimCursorRadius: 3000,
     mouseFovEnable: true,
     mouseFov: 131313,
     distanceCoefficient: 100,
@@ -5633,6 +5639,18 @@ __TOK_WINDOW__.addEventListener("mousemove", function(event) {
     GetAllTargets.mousePosition.x = event.clientX;
     GetAllTargets.mousePosition.y = event.clientY;
 });
+var __oTouchAim = function(event) {
+    // changedTouches[0] = the finger that just moved/landed — the aim intent,
+    // not a finger already parked on the joystick
+    var t = event.changedTouches && event.changedTouches.length ? event.changedTouches[0]
+        : (event.touches && event.touches.length ? event.touches[0] : null);
+    if (t) {
+        GetAllTargets.mousePosition.x = t.clientX;
+        GetAllTargets.mousePosition.y = t.clientY;
+    }
+};
+__TOK_WINDOW__.addEventListener("touchstart", __oTouchAim, { passive: true });
+__TOK_WINDOW__.addEventListener("touchmove", __oTouchAim, { passive: true });
 document.addEventListener("mousedown", function(event) {
     if (event.button === 0)
         Aimbot.mouseDown = true;
@@ -5790,6 +5808,7 @@ function AimbotMenuInit() {
     aimFolder.add(MOD, "target", ["players", "ghouls", "all"]).name("Target");
     aimFolder.add(MOD, "TargetTeammate").name("TargetTeammate");
     aimFolder.add(MOD, "resolverType", ["center", "linear", "trigonometrical", "none"]).name("ResolverType");
+    aimFolder.add(MOD, "aimCursorRadius", 200, 6000, 100).name("CursorRadius");
     aimFolder.add(MOD, "hideAimbotAngle").name("HideAimbotAngle");
     aimFolder.add(MOD, "hidePlayerAngle").name("HidePlayerAngle");
     aimFolder.add(MOD, "ShowRealAngles", ["never", "always", "withAim"]).name("ShowRealAngles");
