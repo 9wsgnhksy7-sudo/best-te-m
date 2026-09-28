@@ -5164,7 +5164,7 @@ class AimbotCon {
         if (mode === "players" || mode === "all") {
             for (let pid = 1; pid < GetAllTargets.players.length; pid++) {
                 const player = GetAllTargets.players[pid];
-                if (!player || !player.active || this.isSelf(player))
+                if (!player || !player.active || player.id === this.myId())
                     continue;
                 if (!MOD.TargetTeammate && myTeam !== -1 && myTeam !== -2 &&
                     World.players[player.id] !== undefined &&
@@ -5182,8 +5182,6 @@ class AimbotCon {
                 const ghoul = GetAllTargets.ghouls[uid];
                 if (!ghoul || !ghoul.active)
                     continue;
-                if (calculateDistance(this.getSelf(), ghoul) < 12)
-                    continue;
                 let distance = calculateDistance(from, ghoul);
                 if (distance < bestDist) {
                     best = ghoul;
@@ -5193,52 +5191,12 @@ class AimbotCon {
         }
         return best;
     }
-    pickTarget(me) {
-        var mc = GetAllTargets.mouseMapCords;
-        if (mc && (mc.x !== 0 || mc.y !== 0))
-            return this.findTarget(mc, MOD.aimCursorRadius || 3000);
-        return this.findTarget(me, 2500);
-    }
     resolve() {
         var me = this.getSelf();
         var target;
         var px, py;
-        if (MOD.resolverType === "center") {
-            if (MOD.lockId > -1 && MOD.lockId !== this.myId() && GetAllTargets.players[MOD.lockId] && GetAllTargets.players[MOD.lockId].active) {
-                target = GetAllTargets.players[MOD.lockId];
-            } else {
-                target = this.pickTarget(me);
-            }
-            this.currentTarget = target;
-            if (target == null) {
-                GetAllTargets.lines[0].reset();
-                GetAllTargets.lines[1].reset();
-                return this.lastAngle;
-            }
-            px = target.x;
-            py = target.y;
-        } else if (MOD.resolverType === "none" || MOD.resolverType === 1 || MOD.resolverType === "1") {
-            target = this.pickTarget(me);
-            if (target == null) {
-                GetAllTargets.lines[0].reset();
-                GetAllTargets.lines[1].reset();
-                return this.lastAngle;
-            }
-            if (target.prevX[0] === -1) {
-                px = target.x;
-                py = target.y;
-            } else {
-                var leadNone = calculateDistance(me, target) / MOD.distanceCoefficient + target.staleT();
-                var updScaleNone = 62 / (target.updDt || 62);
-                px = target.x + leadNone * (target.x - target.prevX[0]) * updScaleNone;
-                py = target.y + leadNone * (target.y - target.prevY[0]) * updScaleNone;
-            }
-        } else if (MOD.resolverType === "trigonometrical") {
-            if (MOD.lockId > -1 && MOD.lockId !== this.myId() && GetAllTargets.players[MOD.lockId] && GetAllTargets.players[MOD.lockId].active) {
-                target = GetAllTargets.players[MOD.lockId];
-            } else {
-                target = this.pickTarget(me);
-            }
+        if (MOD.resolverType === 1 || MOD.resolverType === "1") {
+            target = this.findTarget(me, 2500);
             this.currentTarget = target;
             if (target == null) {
                 GetAllTargets.lines[0].reset();
@@ -5249,34 +5207,18 @@ class AimbotCon {
                 px = target.x;
                 py = target.y;
             } else {
-                var updScaleTrig = 62 / (target.updDt || 62);
-                var tvx = (target.x - target.prevX[0]) * updScaleTrig;
-                var tvy = (target.y - target.prevY[0]) * updScaleTrig;
-                var tNx = target.x + tvx * target.staleT();
-                var tNy = target.y + tvy * target.staleT();
-                var speed = Math.sqrt(tvx * tvx + tvy * tvy);
-                var distT = calculateDistance(me, { x: tNx, y: tNy }) || 1;
-                var baseAngle = Math.atan2(tNy - me.y, tNx - me.x);
-                if (speed > 0) {
-                    var ux = tvx / speed;
-                    var uy = tvy / speed;
-                    var sinArg = (uy * (tNx - me.x) - ux * (tNy - me.y)) / (distT * MOD.bulletSpeedCoefficient);
-                    if (sinArg > 1) sinArg = 1;
-                    if (sinArg < -1) sinArg = -1;
-                    var aimAngle = baseAngle + Math.asin(sinArg);
-                    var flightT = distT / (MOD.bulletSpeedCoefficient * speed);
-                    px = me.x + Math.cos(aimAngle) * distT;
-                    py = me.y + Math.sin(aimAngle) * distT;
-                } else {
-                    px = target.x;
-                    py = target.y;
-                }
+                var distancee = calculateDistance(me, target) / MOD.distanceCoefficient;
+                px = target.x + distancee * (target.x - target.prevX[0]);
+                py = target.y + distancee * (target.y - target.prevY[0]);
             }
         } else {
-            if (MOD.lockId > -1 && MOD.lockId !== this.myId() && GetAllTargets.players[MOD.lockId] && GetAllTargets.players[MOD.lockId].active) {
-                target = GetAllTargets.players[MOD.lockId];
+            // "linear" — donor default
+            if (MOD.lockId > -1) {
+                target = GetAllTargets.getPlayerById(MOD.lockId);
+            } else if (MOD.mouseFovEnable) {
+                target = this.findTarget(GetAllTargets.mouseMapCords, MOD.mouseFov);
             } else {
-                target = this.pickTarget(me);
+                target = this.findTarget(me, 2500);
             }
             this.currentTarget = target;
             if (target == null) {
@@ -5288,14 +5230,15 @@ class AimbotCon {
                 px = target.x;
                 py = target.y;
             } else {
-                var lead = calculateDistance(me, target) / MOD.distanceCoefficient + MOD.offsetCoefficient + target.staleT();
-                var updScaleLin = 62 / (target.updDt || 62);
-                px = target.x + lead * (target.x - target.prevX[0]) * updScaleLin;
-                py = target.y + lead * (target.y - target.prevY[0]) * updScaleLin;
+                var distance = calculateDistance(me, target) / MOD.distanceCoefficient + MOD.offsetCoefficient;
+                px = target.x + distance * (target.x - target.prevX[0]);
+                py = target.y + distance * (target.y - target.prevY[0]);
             }
         }
-        this.currentTarget = target;
-        var angle = Math.floor(Math.atan2(py - me.y, px - me.x) * AIM_RAD);
+        var angle = Math.floor(Math.atan((py - me.y) / (px - me.x)) * 180 / Math.PI);
+        if (px < me.x) {
+            angle += 180;
+        }
         angle = ((angle % 360) + 360) % 360;
         this.lastAngle = angle;
         try {
@@ -5319,9 +5262,8 @@ class AimbotCon {
         }
         if (MOD.visualizeResolving) {
             GetAllTargets.lines[0].color = MOD.visualizeResolvingColor;
-            GetAllTargets.lines[0].reset(me.x, me.y, target.x, target.y);
-            GetAllTargets.lines[1].color = "#FF3030";
-            GetAllTargets.lines[1].reset(me.x, me.y, px, py);
+            GetAllTargets.lines[0].reset(me.x, me.y, px, py);
+            GetAllTargets.lines[1].reset();
         } else {
             GetAllTargets.lines[0].reset();
             GetAllTargets.lines[1].reset();
@@ -5333,8 +5275,10 @@ class AimbotCon {
         var target;
         if (MOD.lockId > -1 && MOD.lockId !== this.myId() && GetAllTargets.players[MOD.lockId] && GetAllTargets.players[MOD.lockId].active) {
             target = GetAllTargets.players[MOD.lockId];
+        } else if (MOD.mouseFovEnable) {
+            target = this.findTarget(GetAllTargets.mouseMapCords, MOD.mouseFov);
         } else {
-            target = this.pickTarget(me);
+            target = this.findTarget(me, Math.min(2500, MOD.spearMaxRange || 560));
         }
         this.currentTarget = target;
         if (target == null) {
@@ -5489,8 +5433,7 @@ var MOD = {
     hidePlayerAngle: false,
     target: "players",
     TargetTeammate: false,
-    resolverType: "center",
-    aimCursorRadius: 3000,
+    resolverType: "linear",
     mouseFovEnable: true,
     mouseFov: 131313,
     distanceCoefficient: 100,
@@ -5802,8 +5745,6 @@ function AimbotMenuInit() {
     aimFolder.add(MOD, "AimBotEnabled").name("AimBotEnabled");
     aimFolder.add(MOD, "target", ["players", "ghouls", "all"]).name("Target");
     aimFolder.add(MOD, "TargetTeammate").name("TargetTeammate");
-    aimFolder.add(MOD, "resolverType", ["center", "linear", "trigonometrical", "none"]).name("ResolverType");
-    aimFolder.add(MOD, "aimCursorRadius", 200, 6000, 100).name("CursorRadius");
     aimFolder.add(MOD, "hideAimbotAngle").name("HideAimbotAngle");
     aimFolder.add(MOD, "hidePlayerAngle").name("HidePlayerAngle");
     aimFolder.add(MOD, "ShowRealAngles", ["never", "always", "withAim"]).name("ShowRealAngles");
