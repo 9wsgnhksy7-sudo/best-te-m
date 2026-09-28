@@ -1,39 +1,65 @@
 #!/usr/bin/env bash
-# Авто-обнова mod.js: качает свежий клиент devast.io, деобфусцирует,
-# прогоняет auto_port.py и пушит результат в этот репозиторий.
-# Запускать из корня репо после того, как devast.io обновил клиент:
-#   ./update_mod.sh
+# Полная пересборка mod.js: свежий клиент devast.io -> webcrack ->
+# postprocess -> auto_port -> mod.js.  Самодостаточная: работает и локально,
+# и в GitHub Actions (см. .github/workflows/update_mod.yml).
 set -euo pipefail
 
-export PATH=/home/ubuntu/pipeline/node/bin:$PATH
-PROJ=/home/ubuntu/ziptest/project
-WORK=/tmp/client_latest
 REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
-
+WORK="${TMPDIR:-/tmp}/client_latest"
 rm -rf "$WORK" && mkdir -p "$WORK"
+
+# --- node ---
+if ! command -v node >/dev/null 2>&1; then
+  mkdir -p "$HOME/.local/node"
+  curl -fsSL https://nodejs.org/dist/v20.19.0/node-v20.19.0-linux-x64.tar.xz -o /tmp/node.tar.xz
+  tar -xJf /tmp/node.tar.xz -C "$HOME/.local/node" --strip-components=1
+fi
+export PATH="$HOME/.local/node/bin:$PATH"
+
+# --- python deps ---
+python3 -c "import requests, bs4" 2>/dev/null \
+  || python3 -m pip install --user -q requests beautifulsoup4
+
+# --- webcrack ---
+if ! command -v webcrack >/dev/null 2>&1; then
+  cd "$WORK" && npm install webcrack --no-save >/dev/null 2>&1
+fi
+if command -v webcrack >/dev/null 2>&1; then
+  WEBCRACK=webcrack
+elif [ -x "$WORK/node_modules/.bin/webcrack" ]; then
+  WEBCRACK="$WORK/node_modules/.bin/webcrack"
+else
+  WEBCRACK="npx --yes webcrack"
+fi
+
 cd "$WORK"
 
-# 1. свежий клиент
-INDEX=$(curl -s https://devast.io/)
-JS=$(printf '%s' "$INDEX" | grep -o 'js/[A-Za-z0-9_-]*\.js' | head -1)
+# --- свежий клиент ---
+curl -fsSL https://devast.io/ -o index.html
+JS=$(grep -o 'js/[A-Za-z0-9_-]*\.js' index.html | head -1)
+[ -n "$JS" ] || { echo "FAIL: client js not found"; exit 1; }
 echo "client: $JS"
-curl -s "https://devast.io/$JS" -o client.js
+curl -fsSL "https://devast.io/$JS" -o client.js
 [ -s client.js ] || { echo "FAIL: client empty"; exit 1; }
 
-# 2. деобфускация + постпроцесс
-webcrack client.js -o out
-cd "$PROJ"
-python3 -c "import devast_tracker, pathlib; devast_tracker.postprocess_dir(pathlib.Path('$WORK/out'))"
+# --- деобфускация + постпроцесс ---
+$WEBCRACK client.js -o out
+python3 -c "import sys, pathlib; sys.path.insert(0, '$REPO_DIR'); import devast_tracker; devast_tracker.postprocess_dir(pathlib.Path('$WORK/out'))"
 
-# 3. сборка мода
-python3 auto_port.py "$WORK/out/deobfuscated.js" -o /tmp/mod_new.js
+CLIENT_JS=$(find "$WORK/out" -name '*.js' -printf '%s %p\n' | sort -rn | head -1 | cut -d' ' -f2-)
+[ -n "$CLIENT_JS" ] || { echo "FAIL: no deobfuscated js"; exit 1; }
+
+# --- сборка мода ---
+python3 "$REPO_DIR/auto_port.py" "$CLIENT_JS" -o /tmp/mod_new.js
 node --check /tmp/mod_new.js
-
-# 4. пуш в репо
 cp /tmp/mod_new.js "$REPO_DIR/mod.js"
-cp /tmp/mod_new.js "$PROJ/full.js"
+
 cd "$REPO_DIR"
-git add mod.js update_mod.sh
-git commit -m "Update mod.js (client $JS)" || echo "no changes"
-git push origin main
-echo "DONE: mod.js updated"
+git add mod.js
+if git diff --cached --quiet; then
+  echo "mod.js unchanged"
+else
+  git commit -q -m "auto-update mod.js (client $JS)"
+  git push origin main
+  echo "DONE: mod.js updated ($JS)"
+fi
