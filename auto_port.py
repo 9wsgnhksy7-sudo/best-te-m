@@ -5317,7 +5317,7 @@ class AimbotCon {
         } else if (MOD.mouseFovEnable) {
             target = this.findTarget(GetAllTargets.mouseMapCords, MOD.mouseFov);
         } else {
-            target = this.findTarget(me, 2500);
+            target = this.findTarget(me, Math.min(2500, MOD.spearMaxRange || 560));
         }
         this.currentTarget = target;
         if (target == null) {
@@ -5325,45 +5325,53 @@ class AimbotCon {
             GetAllTargets.lines[1].reset();
             return this.lastAngle;
         }
-        var spd = MOD.spearSpeed || 38;
+        var spd = MOD.spearSpeed || 46.5;
         var px, py;
         if (target.prevX[0] === -1) {
             px = target.x;
             py = target.y;
         } else {
             var updS = 62 / (target.updDt || 62);
-            var tvx = (target.x - target.prevX[0]) * updS;
-            var tvy = (target.y - target.prevY[0]) * updS;
+            // smoothed target velocity: average the last two observed deltas
+            // to cut 62ms-snapshot jitter.
+            var d1x = target.x - target.prevX[0], d1y = target.y - target.prevY[0];
+            var tvx = d1x, tvy = d1y;
+            if (target.prevX[1] !== -1) {
+                tvx = (d1x + target.prevX[0] - target.prevX[1]) * 0.5;
+                tvy = (d1y + target.prevY[0] - target.prevY[1]) * 0.5;
+            }
+            tvx *= updS;
+            tvy *= updS;
             var st = (typeof target.staleT === "function") ? target.staleT() : 0;
             var dx = target.x + tvx * st - me.x;
             var dy = target.y + tvy * st - me.y;
+            // spear flies straight at a constant ~0.75px/ms (def field);
+            // solve |d + v*t| = s*t for the smallest positive t.
+            var qa = tvx * tvx + tvy * tvy - spd * spd;
+            var qb = 2 * (dx * tvx + dy * tvy);
             var qc = dx * dx + dy * dy;
-            var t = Math.sqrt(qc) / spd;
-            // spear accelerates in flight (~23px/tick at launch -> ~46px/tick
-            // by ~700ms): iterate the intercept with the average speed
-            // expected over the current flight-time estimate.
-            for (var it = 0; it < 4; it++) {
-                var avs = (t <= 11.5) ? 23 + t : 46 - 132 / t;
-                if (!(avs > 0)) avs = 30;
-                var qa = tvx * tvx + tvy * tvy - avs * avs;
-                var qb = 2 * (dx * tvx + dy * tvy);
-                var tN = -1;
-                if (Math.abs(qa) < 0.000001) {
-                    if (Math.abs(qb) > 0.000001) tN = -qc / qb;
-                } else {
-                    var disc = qb * qb - 4 * qa * qc;
-                    if (disc >= 0) {
-                        var sd = Math.sqrt(disc);
-                        var t1 = (-qb - sd) / (2 * qa), t2 = (-qb + sd) / (2 * qa);
-                        if (t1 > 0 && t2 > 0) tN = Math.min(t1, t2);
-                        else tN = Math.max(t1, t2);
-                    }
+            var t = -1;
+            if (Math.abs(qa) < 0.000001) {
+                if (Math.abs(qb) > 0.000001) t = -qc / qb;
+            } else {
+                var disc = qb * qb - 4 * qa * qc;
+                if (disc >= 0) {
+                    var sd = Math.sqrt(disc);
+                    var t1 = (-qb - sd) / (2 * qa), t2 = (-qb + sd) / (2 * qa);
+                    if (t1 > 0 && t2 > 0) t = Math.min(t1, t2);
+                    else t = Math.max(t1, t2);
                 }
-                if (!(tN > 0)) break;
-                t = tN;
             }
+            if (!(t > 0)) t = Math.sqrt(qc) / spd;
             px = target.x + tvx * (st + t);
             py = target.y + tvy * (st + t);
+            // spear dies after ~600px (def path) — don't aim beyond its range
+            if (t * spd > 590) {
+                this.currentTarget = null;
+                GetAllTargets.lines[0].reset();
+                GetAllTargets.lines[1].reset();
+                return this.lastAngle;
+            }
         }
         var angle = Math.floor(Math.atan2(py - me.y, px - me.x) * AIM_RAD);
         angle = ((angle % 360) + 360) % 360;
@@ -5433,7 +5441,8 @@ class JitterCon {
 var MOD = {
     AimBotEnabled: false,
     AimbotSpearEnabled: false,
-    spearSpeed: 38,
+    spearSpeed: 46.5,
+    spearMaxRange: 560,
     hideAimbotAngle: false,
     hidePlayerAngle: false,
     target: "players",
@@ -5516,7 +5525,8 @@ function aimbotTick() {
     if (_spearOn) {
         var sAngle = Aimbot.spearResolve();
         Aimbot.send([6, sAngle]);
-        if (MOD.autoFire && Aimbot.hasTarget()) {
+        if (MOD.autoFire && Aimbot.hasTarget() && Date.now() - (Aimbot._spearLastThrow || 0) > 830) {
+            Aimbot._spearLastThrow = Date.now();
             Aimbot.send([4]);
             Aimbot.send([5]);
         }
@@ -5750,7 +5760,8 @@ function AimbotMenuInit() {
     aimFolder.add(MOD, "lockId", -1, 120, 1).name("LockId");
     const spearFolder = menu.addFolder("\ud83d\udde1 Aimbot Spear \ud83d\udde1");
     spearFolder.add(MOD, "AimbotSpearEnabled").name("AimbotSpearEnabled");
-    spearFolder.add(MOD, "spearSpeed", 1, 120, 1).name("SpearSpeed");
+    spearFolder.add(MOD, "spearSpeed", 20, 60, 0.5).name("SpearSpeed");
+    spearFolder.add(MOD, "spearMaxRange", 200, 600, 10).name("MaxRange");
     spearFolder.add(MOD, "autoFire").name("AutoThrow");
     const antiFolder = menu.addFolder("Anti-Aim / Strafe");
     antiFolder.add(MOD, "AntiAimbot").name("StrafeEnable");
