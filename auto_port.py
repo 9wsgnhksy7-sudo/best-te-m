@@ -5325,7 +5325,7 @@ class AimbotCon {
             GetAllTargets.lines[1].reset();
             return this.lastAngle;
         }
-        var spd = MOD.spearSpeed || 30;
+        var spd = MOD.spearSpeed || 38;
         var px, py;
         if (target.prevX[0] === -1) {
             px = target.x;
@@ -5334,25 +5334,34 @@ class AimbotCon {
             var updS = 62 / (target.updDt || 62);
             var tvx = (target.x - target.prevX[0]) * updS;
             var tvy = (target.y - target.prevY[0]) * updS;
-            var st = target.staleT();
+            var st = (typeof target.staleT === "function") ? target.staleT() : 0;
             var dx = target.x + tvx * st - me.x;
             var dy = target.y + tvy * st - me.y;
-            var qa = tvx * tvx + tvy * tvy - spd * spd;
-            var qb = 2 * (dx * tvx + dy * tvy);
             var qc = dx * dx + dy * dy;
-            var t = -1;
-            if (Math.abs(qa) < 0.000001) {
-                if (Math.abs(qb) > 0.000001) t = -qc / qb;
-            } else {
-                var disc = qb * qb - 4 * qa * qc;
-                if (disc >= 0) {
-                    var sd = Math.sqrt(disc);
-                    var t1 = (-qb - sd) / (2 * qa), t2 = (-qb + sd) / (2 * qa);
-                    if (t1 > 0 && t2 > 0) t = Math.min(t1, t2);
-                    else t = Math.max(t1, t2);
+            var t = Math.sqrt(qc) / spd;
+            // spear accelerates in flight (~23px/tick at launch -> ~46px/tick
+            // by ~700ms): iterate the intercept with the average speed
+            // expected over the current flight-time estimate.
+            for (var it = 0; it < 4; it++) {
+                var avs = (t <= 11.5) ? 23 + t : 46 - 132 / t;
+                if (!(avs > 0)) avs = 30;
+                var qa = tvx * tvx + tvy * tvy - avs * avs;
+                var qb = 2 * (dx * tvx + dy * tvy);
+                var tN = -1;
+                if (Math.abs(qa) < 0.000001) {
+                    if (Math.abs(qb) > 0.000001) tN = -qc / qb;
+                } else {
+                    var disc = qb * qb - 4 * qa * qc;
+                    if (disc >= 0) {
+                        var sd = Math.sqrt(disc);
+                        var t1 = (-qb - sd) / (2 * qa), t2 = (-qb + sd) / (2 * qa);
+                        if (t1 > 0 && t2 > 0) tN = Math.min(t1, t2);
+                        else tN = Math.max(t1, t2);
+                    }
                 }
+                if (!(tN > 0)) break;
+                t = tN;
             }
-            if (!(t > 0)) t = Math.sqrt(qc) / spd;
             px = target.x + tvx * (st + t);
             py = target.y + tvy * (st + t);
         }
@@ -5424,7 +5433,7 @@ class JitterCon {
 var MOD = {
     AimBotEnabled: false,
     AimbotSpearEnabled: false,
-    spearSpeed: 30,
+    spearSpeed: 38,
     hideAimbotAngle: false,
     hidePlayerAngle: false,
     target: "players",
