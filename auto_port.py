@@ -1134,6 +1134,78 @@ def find_inventory(src: str) -> dict:
     }
 
 
+def find_spear(src: str) -> dict:
+    """Locate the thrown-spear weapon index inside the player weapons table
+    (entity.<WFIELD> >> 8 & 255 == weapon index) so the spear aimbot can
+    auto-engage only while a spear is equipped."""
+    out = {"spear_idx": -1, "weapon_field": None, "weapons_field": None}
+    hits = re.findall(
+        r'\.([^\.\s\[\]\(\)\{\};,=!+*/-]+)\s*>>\s*8\s*&\s*255', src)
+    hits = Counter(h for h in hits if h and not h[0].isdigit())
+    if hits:
+        out["weapon_field"] = hits.most_common(1)[0][0]
+    pos = src.find("audio/spear-shot")
+    if pos < 0:
+        return out
+
+    def enclosing(p: int):
+        i, depth = p - 1, 0
+        while i >= 0:
+            ch = src[i]
+            if ch in "]}":
+                depth += 1
+            elif ch in "[{":
+                if depth == 0:
+                    return i, ch
+                depth -= 1
+            i -= 1
+        return -1, ""
+
+    # "audio/spear-shot" may appear in several tables; the right one is the
+    # array the client indexes as `X[Y].<field>[weaponIdx]` (the player
+    # weapons table) — verify the field is used in that exact shape.
+    WI = r'[^\s\.\[\]\(\)\{\};,=!+*/-]+'
+    cands = []
+    p = pos
+    while p >= 0:
+        a_i, _ = enclosing(p)       # '[' of the audio list
+        def_i, ch1 = enclosing(a_i)  # '{' of the spear weapon def
+        arr_i, ch2 = enclosing(def_i)  # '[' of the weapons array
+        field = None
+        if def_i >= 0 and arr_i >= 0 and ch2 == "[":
+            j = arr_i - 1
+            while j >= 0 and src[j] in " \t\n":
+                j -= 1
+            if src[j] == ":":
+                m = re.search(r'(%s)\s*$' % WI, src[max(0, j - 200):j])
+                if m:
+                    field = m.group(1)
+            depth, idx, k = 0, 0, arr_i + 1
+            while k < def_i:
+                c2 = src[k]
+                if c2 in "[{":
+                    depth += 1
+                    if c2 == "{" and depth == 1:
+                        idx += 1
+                elif c2 in "]}":
+                    depth -= 1
+                k += 1
+            cands.append({"field": field, "idx": idx})
+        p = src.find("audio/spear-shot", p + 1)
+    pick = None
+    for c in cands:
+        if c["field"] and re.search(
+                r'\]\s*\.\s*%s\s*\[' % re.escape(c["field"]), src):
+            pick = c
+            break
+    if pick is None and cands:
+        pick = cands[-1]
+    if pick:
+        out["spear_idx"] = pick["idx"]
+        out["weapons_field"] = pick["field"]
+    return out
+
+
 def find_state(src: str) -> dict:
     """Detect net object state check for connected."""
     # Already have net_obj from find_net; look for State.__CONNECTED__
@@ -4880,6 +4952,8 @@ AIMBOT_BLOCK = r"""  /* ===================== dat.GUI (from message84) =========
 /* =================== dat.GUI end =================== */
 /* ===================== AIMBOT (ported from message client) ===================== */
 var AIM_RAD = 180 / Math.PI;
+var SPEAR_IDX = __SPEAR_IDX__;
+try { window.__SPEAR_IDX = SPEAR_IDX; } catch (e) {}
 function calculateDistance(point1, point2) {
     return Math.floor(Math.sqrt(Math.pow(point1.x - point2.x, 2) + Math.pow(point1.y - point2.y, 2)));
 }
@@ -4909,6 +4983,7 @@ class GetTarget {
         this.prevY = [];
         this.active = false;
         this.weapon = -1;
+        this.weaponIdx = -1;
         this.gear = -1;
         this.updT = 0;
         this.updDt = 62;
@@ -4976,6 +5051,7 @@ class GetAllTargetsCon {
         this.selfFromPacket = 0;
         this.lastId = 0;
         this.myLastMoveDirection = 0;
+        this.selfWeapon = -1;
     }
     getPlayerById(pID) {
         if (!this.players[pID])
@@ -5233,6 +5309,69 @@ class AimbotCon {
         }
         return angle;
     }
+    spearResolve() {
+        var me = this.getSelf();
+        var target;
+        if (MOD.lockId > -1 && MOD.lockId !== this.myId() && GetAllTargets.players[MOD.lockId] && GetAllTargets.players[MOD.lockId].active) {
+            target = GetAllTargets.players[MOD.lockId];
+        } else if (MOD.mouseFovEnable) {
+            target = this.findTarget(GetAllTargets.mouseMapCords, MOD.mouseFov);
+        } else {
+            target = this.findTarget(me, 2500);
+        }
+        this.currentTarget = target;
+        if (target == null) {
+            GetAllTargets.lines[0].reset();
+            GetAllTargets.lines[1].reset();
+            return this.lastAngle;
+        }
+        var spd = MOD.spearSpeed || 30;
+        var px, py;
+        if (target.prevX[0] === -1) {
+            px = target.x;
+            py = target.y;
+        } else {
+            var updS = 62 / (target.updDt || 62);
+            var tvx = (target.x - target.prevX[0]) * updS;
+            var tvy = (target.y - target.prevY[0]) * updS;
+            var st = target.staleT();
+            var dx = target.x + tvx * st - me.x;
+            var dy = target.y + tvy * st - me.y;
+            var qa = tvx * tvx + tvy * tvy - spd * spd;
+            var qb = 2 * (dx * tvx + dy * tvy);
+            var qc = dx * dx + dy * dy;
+            var t = -1;
+            if (Math.abs(qa) < 0.000001) {
+                if (Math.abs(qb) > 0.000001) t = -qc / qb;
+            } else {
+                var disc = qb * qb - 4 * qa * qc;
+                if (disc >= 0) {
+                    var sd = Math.sqrt(disc);
+                    var t1 = (-qb - sd) / (2 * qa), t2 = (-qb + sd) / (2 * qa);
+                    if (t1 > 0 && t2 > 0) t = Math.min(t1, t2);
+                    else t = Math.max(t1, t2);
+                }
+            }
+            if (!(t > 0)) t = Math.sqrt(qc) / spd;
+            px = target.x + tvx * (st + t);
+            py = target.y + tvy * (st + t);
+        }
+        var angle = Math.floor(Math.atan2(py - me.y, px - me.x) * AIM_RAD);
+        angle = ((angle % 360) + 360) % 360;
+        this.lastAngle = angle;
+        try {
+            window._oDbgSpear = { w: GetAllTargets.selfWeapon, idx: SPEAR_IDX,
+                tid: target.id, tx: target.x | 0, ty: target.y | 0,
+                px: px | 0, py: py | 0, a: angle };
+        } catch (e) {}
+        if (MOD.visualizeResolving) {
+            GetAllTargets.lines[0].color = "#00FFFF";
+            GetAllTargets.lines[0].reset(me.x, me.y, target.x, target.y);
+            GetAllTargets.lines[1].color = "#FF3030";
+            GetAllTargets.lines[1].reset(me.x, me.y, px, py);
+        }
+        return angle;
+    }
     hasTarget() {
         return this.currentTarget != null;
     }
@@ -5284,6 +5423,8 @@ class JitterCon {
 }
 var MOD = {
     AimBotEnabled: false,
+    AimbotSpearEnabled: false,
+    spearSpeed: 30,
     hideAimbotAngle: false,
     hidePlayerAngle: false,
     target: "players",
@@ -5362,7 +5503,15 @@ var Jitter = new JitterCon();
 function aimbotTick() {
     if (Aimbot.dead)
         return;
-    if (MOD.AimBotEnabled) {
+    var _spearOn = MOD.AimbotSpearEnabled && GetAllTargets.selfWeapon === SPEAR_IDX && SPEAR_IDX >= 0;
+    if (_spearOn) {
+        var sAngle = Aimbot.spearResolve();
+        Aimbot.send([6, sAngle]);
+        if (MOD.autoFire && Aimbot.hasTarget()) {
+            Aimbot.send([4]);
+            Aimbot.send([5]);
+        }
+    } else if (MOD.AimBotEnabled) {
         if (MOD.jitterActive) {
             if (!Aimbot.refreshing) {
                 if (!MOD.stopJittersOnStop || Aimbot.mouseDown) {
@@ -5590,6 +5739,10 @@ function AimbotMenuInit() {
     aimFolder.add(MOD, "offsetCoefficient", 0, 3, 0.1).name("OffsetCoefficient");
     aimFolder.add(MOD, "autoFire").name("AutoFire");
     aimFolder.add(MOD, "lockId", -1, 120, 1).name("LockId");
+    const spearFolder = menu.addFolder("\ud83d\udde1 Aimbot Spear \ud83d\udde1");
+    spearFolder.add(MOD, "AimbotSpearEnabled").name("AimbotSpearEnabled");
+    spearFolder.add(MOD, "spearSpeed", 1, 120, 1).name("SpearSpeed");
+    spearFolder.add(MOD, "autoFire").name("AutoThrow");
     const antiFolder = menu.addFolder("Anti-Aim / Strafe");
     antiFolder.add(MOD, "AntiAimbot").name("StrafeEnable");
     antiFolder.add(MOD, "antiAimMode", ["At target", "Round", "Round2"]).name("AntiAimMode");
@@ -5683,6 +5836,8 @@ def port_aimbot(src: str, ent: str | None = None) -> str:
     hard-coded line ranges and no hard-coded entity object name.
     """
     import re
+    spear = find_spear(src)
+    SPEAR_IDX = spear.get("spear_idx", -1)
     if "Aimbot.onDeath" in src and "GetAllTargets" in src:
         # already ported: swap only the stale mod tail — the client-code
         # grafts are already in place and can't be re-anchored.
@@ -5703,6 +5858,7 @@ def port_aimbot(src: str, ent: str | None = None) -> str:
                 '__TOK_SEND__': nfx.get('send_method') or 'send',
             }.items():
                 blk = blk.replace(a, b)
+            blk = blk.replace('__SPEAR_IDX__', str(SPEAR_IDX))
             src = src[:i_stale].rstrip('\n') + '\n' \
                 + '/* ===================== MOD BLOCK (ported) ===================== */\n' \
                 + blk + '\n/* =================== MOD BLOCK end =================== */\n' \
@@ -5791,6 +5947,11 @@ def port_aimbot(src: str, ent: str | None = None) -> str:
         if a not in block:
             raise AimbotPortError("donor placeholder missing in AIMBOT_BLOCK: %s" % a)
         block = block.replace(a, b)
+    WFIELD = spear.get("weapon_field")
+    if SPEAR_IDX < 0 or not WFIELD:
+        print("  WARNING spear detection incomplete (idx=%s field=%s) — spear aimbot disabled" % (SPEAR_IDX, WFIELD))
+        SPEAR_IDX = -1
+    block = block.replace('__SPEAR_IDX__', str(SPEAR_IDX))
 
     patches = []  # (start, end, newlines)
 
@@ -5936,6 +6097,7 @@ def port_aimbot(src: str, ent: str | None = None) -> str:
     update_lines = [
         "      if (%s !== 0 && %s === 0) {" % (E_owner, E_type),
         "        GetAllTargets.getPlayerById(%s).update(%s, %s, %s);" % (E_owner, POS_X, POS_Y, POS_W),
+        "        try { GetAllTargets.getPlayerById(%s).weaponIdx = (%s.%s >> 8) & 255; if (%s === Aimbot.myId()) GetAllTargets.selfWeapon = (%s.%s >> 8) & 255; } catch (e) {}" % (E_owner, entity_var, WFIELD or 'x', E_owner, entity_var, WFIELD or 'x'),
         "        if (World.PLAYER[%s] !== undefined) Aimbot.selfId = World.PLAYER[%s];" % (MYID, MYID),
         "        if (%s === Aimbot.myId()) {" % E_owner,
         "          GetAllTargets.selfPosition = { x: %s, y: %s };" % (POS_X, POS_Y),
