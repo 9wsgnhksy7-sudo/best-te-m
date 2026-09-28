@@ -5203,7 +5203,12 @@ class AimbotCon {
             } else if (MOD.mouseFovEnable) {
                 target = this.findTarget(GetAllTargets.mouseMapCords, MOD.mouseFov);
             } else {
-                target = this.findTarget(me, 2500);
+                var prev = this.currentTarget;
+                if (prev && prev.active && !this.isSelf(prev) && calculateDistance(me, prev) < 2500) {
+                    target = prev; // sticky target: the aim line stays glued to one player instead of flicking
+                } else {
+                    target = this.findTarget(me, 2500);
+                }
             }
             this.currentTarget = target;
             if (target == null) {
@@ -5231,8 +5236,27 @@ class AimbotCon {
                 // hitscan: the server raycasts when the fire packet lands, so
                 // lead = snapshot staleness + one-way transit (aimLagMs)
                 var lagT = target.staleT() + (MOD.aimLagMs || 110) / 62;
-                px = target.x + etvx * lagT;
-                py = target.y + etvy * lagT;
+                // relative velocity: while we strafe the shot origin moves too,
+                // so lead by (target vel - our vel), not the raw target vel
+                var svx = 0, svy = 0;
+                var meT = GetAllTargets.players[this.myId()];
+                if (meT && meT.prevX && meT.prevX[0] !== -1 && meT !== target) {
+                    var supdS = 62 / (meT.updDt || 62);
+                    if (meT.prevX[2] !== -1) {
+                        svx = (meT.x - meT.prevX[2]) / 3;
+                        svy = (meT.y - meT.prevY[2]) / 3;
+                    } else if (meT.prevX[1] !== -1) {
+                        svx = (meT.x - meT.prevX[1]) * 0.5;
+                        svy = (meT.y - meT.prevY[1]) * 0.5;
+                    } else {
+                        svx = meT.x - meT.prevX[0];
+                        svy = meT.y - meT.prevY[0];
+                    }
+                    svx *= supdS;
+                    svy *= supdS;
+                }
+                px = target.x + (etvx - svx) * lagT;
+                py = target.y + (etvy - svy) * lagT;
             }
         } else if (MOD.resolverType === "none" || MOD.resolverType === 1 || MOD.resolverType === "1") {
             target = this.findTarget(me, 2500);
