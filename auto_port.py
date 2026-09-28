@@ -1450,6 +1450,129 @@ GROK_TAIL = r"""  var GROK_MOD = {
     XrayEnabled: false,
     AutoAttackEnabled: false
   };
+  /* ===== KEY SYSTEM (do not remove: the mod is locked without a valid key) ===== */
+  var GROK_KEY_URLS = [
+    "https://raw.githubusercontent.com/petrususanu333/best-te-m/refs/heads/main/keys.json",
+    "https://cdn.jsdelivr.net/gh/petrususanu333/best-te-m@main/keys.json",
+    "https://raw.githack.com/petrususanu333/best-te-m/main/keys.json",
+    "https://cdn.statically.io/gh/petrususanu333/best-te-m/main/keys.json"
+  ];
+  var _gk = { ok: false, t: 0, key: "", dev: "" };
+  try {
+    _gk.dev = localStorage.getItem("grok_dev") || "";
+    if (!_gk.dev) { _gk.dev = "d" + Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem("grok_dev", _gk.dev); }
+  } catch (e) { _gk.dev = "d" + Math.random().toString(36).slice(2); }
+  function grokAuthOk() { return _gk.ok === true && (Date.now() - _gk.t) < 90000; }
+  window.grokAuthOk = grokAuthOk;
+  function _gkSha256(s) {
+    var data = new TextEncoder().encode(String(s).trim().toUpperCase());
+    return crypto.subtle.digest("SHA-256", data).then(function (b) {
+      return Array.prototype.map.call(new Uint8Array(b), function (x) { return ("0" + x.toString(16)).slice(-2); }).join("");
+    });
+  }
+  function _gkFetchKeys() {
+    var i = 0;
+    function next() {
+      if (i >= GROK_KEY_URLS.length) return Promise.reject(new Error("all mirrors failed"));
+      var url = GROK_KEY_URLS[i++];
+      return fetch(url + (url.indexOf("?") === -1 ? "?" : "&") + "t=" + Date.now()).then(function (r) {
+        if (!r.ok) return next();
+        return r.json();
+      }).catch(function () { return next(); });
+    }
+    return next();
+  }
+  function _gkCheckSha(sha) {
+    return _gkFetchKeys().then(function (d) {
+      var list = (d && d.keys) || [];
+      for (var i = 0; i < list.length; i++) {
+        if (list[i] && list[i].sha === sha && list[i].active === true) return { ok: true };
+      }
+      return { ok: false, reason: "invalid key" };
+    });
+  }
+  function grokKeyLock(msg) {
+    _gk.ok = false;
+    var el = document.getElementById("grok-key-lock");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "grok-key-lock";
+      el.style.cssText = "position:fixed;inset:0;z-index:2147483647;background:rgba(10,10,14,0.85);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;flex-direction:column;font:700 22px Arial,sans-serif;color:#fff;user-select:none;";
+      var box = document.createElement("div");
+      box.style.cssText = "display:flex;flex-direction:column;gap:14px;align-items:center;background:rgba(24,24,32,0.95);padding:34px 46px;border:1px solid #3a3a4a;border-radius:8px;box-shadow:0 0 30px rgba(0,0,0,0.8);";
+      var t = document.createElement("div");
+      t.textContent = "ENTER LICENSE KEY";
+      t.style.cssText = "font-size:20px;letter-spacing:3px;color:#bbb;text-transform:uppercase;";
+      var inp = document.createElement("input");
+      inp.id = "grok-key-input";
+      inp.placeholder = "key...";
+      inp.style.cssText = "width:320px;padding:10px;font:16px monospace;text-align:center;background:#101018;color:#fff;border:1px solid #3a3a4a;border-radius:5px;outline:none;";
+      var btn = document.createElement("button");
+      btn.textContent = "ACTIVATE";
+      btn.style.cssText = "padding:10px 30px;font:700 15px Arial;cursor:pointer;background:#3a3a4a;border:1px solid #555;border-radius:5px;color:#fff;letter-spacing:1px;";
+      var err = document.createElement("div");
+      err.id = "grok-key-err";
+      err.style.cssText = "color:#f55;font-size:14px;min-height:18px;";
+      btn.onclick = function () { grokKeyVerify(inp.value.trim()); };
+      inp.onkeydown = function (e) { if (e.key === "Enter") grokKeyVerify(inp.value.trim()); e.stopPropagation(); };
+      inp.onkeyup = function (e) { e.stopPropagation(); };
+      inp.onkeypress = function (e) { e.stopPropagation(); };
+      box.appendChild(t); box.appendChild(inp); box.appendChild(btn); box.appendChild(err);
+      el.appendChild(box);
+      (document.body || document.documentElement).appendChild(el);
+    }
+    if (msg) { var e2 = el.querySelector("#grok-key-err"); if (e2) e2.textContent = msg; }
+  }
+  function grokKeyVerify(k) {
+    if (!k) { grokKeyLock("enter a key"); return; }
+    var err = document.getElementById("grok-key-err");
+    if (err) err.textContent = "checking...";
+    _gkSha256(k).then(function (sha) {
+      return _gkCheckSha(sha).then(function (d) {
+        if (d && d.ok) {
+          _gk.ok = true; _gk.key = k; _gk.sha = sha; _gk.t = Date.now();
+          try { localStorage.setItem("grok_key", k); } catch (e) {}
+          var el = document.getElementById("grok-key-lock");
+          if (el) el.remove();
+        } else {
+          grokKeyLock((d && d.reason) ? String(d.reason) : "invalid key");
+        }
+      });
+    }).catch(function () {
+      var stored = "";
+      try { stored = localStorage.getItem("grok_key") || ""; } catch (e) {}
+      if (stored && stored === k) { _gk.ok = true; _gk.key = k; _gk.t = Date.now(); var el = document.getElementById("grok-key-lock"); if (el) el.remove(); }
+      else grokKeyLock("key server unreachable");
+    });
+  }
+  setInterval(function () {
+    try {
+      if (typeof grokAuthOk !== "function" || String(grokAuthOk).indexOf("_gk") === -1 || typeof grokKeyLock !== "function") { _gk.ok = false; return; }
+      if (!_gk.ok || !_gk.sha) return;
+      _gkCheckSha(_gk.sha).then(function (d) {
+        if (d && d.ok) { _gk.t = Date.now(); } else { grokKeyLock("key revoked"); }
+      }).catch(function () { _gk.t = Date.now(); /* mirrors offline: grace mode */ });
+    } catch (e) { _gk.ok = false; }
+  }, 30000);
+  /* block all game/lobby input until key is accepted */
+  ["mousedown","mouseup","click","dblclick","contextmenu","wheel","keydown","keyup","keypress","submit","touchstart","pointerdown","pointerup"].forEach(function (t) {
+    window.addEventListener(t, function (ev) {
+      if (grokAuthOk()) return;
+      var l = document.getElementById("grok-key-lock");
+      if (l && l.contains(ev.target)) return;
+      ev.preventDefault(); ev.stopImmediatePropagation(); ev.stopPropagation();
+    }, true);
+  });
+  (function grokKeyInit() {
+    var tries = 0;
+    (function boot() {
+      if (!document.body && tries++ < 100) { setTimeout(boot, 100); return; }
+      var k = "";
+      try { k = localStorage.getItem("grok_key") || ""; } catch (e) {}
+      grokKeyLock("");
+      if (k) grokKeyVerify(k);
+    })();
+  })();
   (function grokInstallFunctionStatus() {
     try {
       if (document.getElementById("grok-function-status-left")) return;

@@ -20,9 +20,12 @@ export PATH="$HOME/.local/node/bin:$PATH"
 python3 -c "import requests, bs4" 2>/dev/null \
   || python3 -m pip install --user -q requests beautifulsoup4
 
-# --- webcrack ---
+# --- webcrack + obfuscator ---
 if ! command -v webcrack >/dev/null 2>&1; then
   cd "$WORK" && npm install webcrack --no-save >/dev/null 2>&1
+fi
+if [ ! -d "$WORK/node_modules/javascript-obfuscator" ]; then
+  cd "$WORK" && npm install javascript-obfuscator --no-save >/dev/null 2>&1
 fi
 if command -v webcrack >/dev/null 2>&1; then
   WEBCRACK=webcrack
@@ -52,7 +55,12 @@ CLIENT_JS=$(find "$WORK/out" -name '*.js' -printf '%s %p\n' | sort -rn | head -1
 # --- сборка мода ---
 python3 "$REPO_DIR/auto_port.py" "$CLIENT_JS" -o /tmp/mod_new.js
 node --check /tmp/mod_new.js
-cp /tmp/mod_new.js "$REPO_DIR/mod.js"
+
+# --- обфускация перед публикацией ---
+cd "$WORK"
+NODE_PATH="$WORK/node_modules" node "$REPO_DIR/obfuscate.js" /tmp/mod_new.js /tmp/mod_obf.js
+node --check /tmp/mod_obf.js
+cp /tmp/mod_obf.js "$REPO_DIR/mod.js"
 
 # маркер версии клиента — по нему workflow решает, пересобирать ли
 mkdir -p "$REPO_DIR/state"
