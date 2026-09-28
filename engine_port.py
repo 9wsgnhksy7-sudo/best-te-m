@@ -5336,11 +5336,16 @@ class AimbotCon {
         var updS = 62 / (target.updDt || 62);
         var tvx = 0, tvy = 0;
         if (target.prevX[0] !== -1) {
-            var d1x = target.x - target.prevX[0], d1y = target.y - target.prevY[0];
-            tvx = d1x; tvy = d1y;
-            if (target.prevX[1] !== -1) {
-                tvx = (d1x + target.prevX[0] - target.prevX[1]) * 0.5;
-                tvy = (d1y + target.prevY[0] - target.prevY[1]) * 0.5;
+            if (target.prevX[2] !== -1) {
+                // 3-sample average = (newest - oldest)/3 — least jitter
+                tvx = (target.x - target.prevX[2]) / 3;
+                tvy = (target.y - target.prevY[2]) / 3;
+            } else if (target.prevX[1] !== -1) {
+                tvx = (target.x - target.prevX[1]) * 0.5;
+                tvy = (target.y - target.prevY[1]) * 0.5;
+            } else {
+                tvx = target.x - target.prevX[0];
+                tvy = target.y - target.prevY[0];
             }
             tvx *= updS;
             tvy *= updS;
@@ -5385,6 +5390,13 @@ class AimbotCon {
         }
         var angle = Math.floor(rad * AIM_RAD);
         angle = ((angle % 360) + 360) % 360;
+        // throw only when consecutive resolves agree — a juking target swings
+        // the predicted intercept angle; gating on stability = no wasted spears
+        var dA = Math.abs(angle - (this._sPrevAng === undefined ? angle : this._sPrevAng));
+        if (dA > 180) dA = 360 - dA;
+        this._spearStable = (this._sPrevTid === target.id && dA <= (MOD.spearStabDeg || 2.5));
+        this._sPrevAng = angle;
+        this._sPrevTid = target.id;
         this.lastAngle = angle;
         try {
             window._oDbgSpear = { w: GetAllTargets.selfWeapon, idx: SPEAR_IDX,
@@ -5455,6 +5467,7 @@ var MOD = {
     spearMaxRange: 560,
     spearHandFwd: 22,
     spearHandSide: -39,
+    spearStabDeg: 2.5,
     hideAimbotAngle: false,
     hidePlayerAngle: false,
     target: "players",
@@ -5537,7 +5550,7 @@ function aimbotTick() {
     if (_spearOn) {
         var sAngle = Aimbot.spearResolve();
         Aimbot.send([6, sAngle]);
-        if (MOD.autoFire && Aimbot.hasTarget() && Date.now() - (Aimbot._spearLastThrow || 0) > 830) {
+        if (MOD.autoFire && Aimbot.hasTarget() && Aimbot._spearStable !== false && Date.now() - (Aimbot._spearLastThrow || 0) > 830) {
             Aimbot._spearLastThrow = Date.now();
             Aimbot.send([4]);
             Aimbot.send([5]);
@@ -5776,6 +5789,7 @@ function AimbotMenuInit() {
     spearFolder.add(MOD, "spearMaxRange", 200, 600, 10).name("MaxRange");
     spearFolder.add(MOD, "spearHandFwd", -60, 60, 1).name("HandFwd");
     spearFolder.add(MOD, "spearHandSide", -60, 60, 1).name("HandSide");
+    spearFolder.add(MOD, "spearStabDeg", 0.5, 10, 0.5).name("Stability");
     spearFolder.add(MOD, "autoFire").name("AutoThrow");
     const antiFolder = menu.addFolder("Anti-Aim / Strafe");
     antiFolder.add(MOD, "AntiAimbot").name("StrafeEnable");
