@@ -5197,7 +5197,44 @@ class AimbotCon {
         var me = this.getSelf();
         var target;
         var px, py;
-        if (MOD.resolverType === "none" || MOD.resolverType === 1 || MOD.resolverType === "1") {
+        if (MOD.exactAim) {
+            if (MOD.lockId > -1 && MOD.lockId !== this.myId() && GetAllTargets.players[MOD.lockId] && GetAllTargets.players[MOD.lockId].active) {
+                target = GetAllTargets.players[MOD.lockId];
+            } else if (MOD.mouseFovEnable) {
+                target = this.findTarget(GetAllTargets.mouseMapCords, MOD.mouseFov);
+            } else {
+                target = this.findTarget(me, 2500);
+            }
+            this.currentTarget = target;
+            if (target == null) {
+                GetAllTargets.lines[0].reset();
+                GetAllTargets.lines[1].reset();
+                return this.lastAngle;
+            }
+            px = target.x;
+            py = target.y;
+            if (target.prevX[0] !== -1) {
+                var eupdS = 62 / (target.updDt || 62);
+                var etvx, etvy;
+                if (target.prevX[2] !== -1) {
+                    etvx = (target.x - target.prevX[2]) / 3;
+                    etvy = (target.y - target.prevY[2]) / 3;
+                } else if (target.prevX[1] !== -1) {
+                    etvx = (target.x - target.prevX[1]) * 0.5;
+                    etvy = (target.y - target.prevY[1]) * 0.5;
+                } else {
+                    etvx = target.x - target.prevX[0];
+                    etvy = target.y - target.prevY[0];
+                }
+                etvx *= eupdS;
+                etvy *= eupdS;
+                // hitscan: the server raycasts when the fire packet lands, so
+                // lead = snapshot staleness + one-way transit (aimLagMs)
+                var lagT = target.staleT() + (MOD.aimLagMs || 110) / 62;
+                px = target.x + etvx * lagT;
+                py = target.y + etvy * lagT;
+            }
+        } else if (MOD.resolverType === "none" || MOD.resolverType === 1 || MOD.resolverType === "1") {
             target = this.findTarget(me, 2500);
             if (target == null) {
                 GetAllTargets.lines[0].reset();
@@ -5473,6 +5510,8 @@ var MOD = {
     spearStabDeg: 2.5,
     hideAimbotAngle: false,
     hidePlayerAngle: false,
+    exactAim: true,
+    aimLagMs: 110,
     target: "players",
     TargetTeammate: false,
     resolverType: "linear",
@@ -5773,6 +5812,8 @@ function AimbotMenuInit() {
     __TOK_WINDOW__.AimbotMenu = menu;
     const aimFolder = menu.addFolder("👑 Aim Bot 👑");
     aimFolder.add(MOD, "AimBotEnabled").name("AimBotEnabled");
+    aimFolder.add(MOD, "exactAim").name("ExactAim (no-miss)");
+    aimFolder.add(MOD, "aimLagMs", 0, 400, 5).name("AimLagMs");
     aimFolder.add(MOD, "target", ["players", "ghouls", "all"]).name("Target");
     aimFolder.add(MOD, "TargetTeammate").name("TargetTeammate");
     aimFolder.add(MOD, "resolverType", ["linear", "trigonometrical", "none"]).name("ResolverType");
