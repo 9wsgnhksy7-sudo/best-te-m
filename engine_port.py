@@ -5197,7 +5197,21 @@ class AimbotCon {
         var me = this.getSelf();
         var target;
         var px, py;
-        if (MOD.resolverType === "none" || MOD.resolverType === 1 || MOD.resolverType === "1") {
+        if (MOD.resolverType === "center") {
+            if (MOD.lockId > -1 && MOD.lockId !== this.myId() && GetAllTargets.players[MOD.lockId] && GetAllTargets.players[MOD.lockId].active) {
+                target = GetAllTargets.players[MOD.lockId];
+            } else {
+                target = this.findTarget(me, 2500);
+            }
+            this.currentTarget = target;
+            if (target == null) {
+                GetAllTargets.lines[0].reset();
+                GetAllTargets.lines[1].reset();
+                return this.lastAngle;
+            }
+            px = target.x;
+            py = target.y;
+        } else if (MOD.resolverType === "none" || MOD.resolverType === 1 || MOD.resolverType === "1") {
             target = this.findTarget(me, 2500);
             if (target == null) {
                 GetAllTargets.lines[0].reset();
@@ -5475,7 +5489,7 @@ var MOD = {
     hidePlayerAngle: false,
     target: "players",
     TargetTeammate: false,
-    resolverType: "linear",
+    resolverType: "center",
     mouseFovEnable: true,
     mouseFov: 131313,
     distanceCoefficient: 100,
@@ -5775,7 +5789,7 @@ function AimbotMenuInit() {
     aimFolder.add(MOD, "AimBotEnabled").name("AimBotEnabled");
     aimFolder.add(MOD, "target", ["players", "ghouls", "all"]).name("Target");
     aimFolder.add(MOD, "TargetTeammate").name("TargetTeammate");
-    aimFolder.add(MOD, "resolverType", ["linear", "trigonometrical", "none"]).name("ResolverType");
+    aimFolder.add(MOD, "resolverType", ["center", "linear", "trigonometrical", "none"]).name("ResolverType");
     aimFolder.add(MOD, "hideAimbotAngle").name("HideAimbotAngle");
     aimFolder.add(MOD, "hidePlayerAngle").name("HidePlayerAngle");
     aimFolder.add(MOD, "ShowRealAngles", ["never", "always", "withAim"]).name("ShowRealAngles");
