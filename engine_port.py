@@ -6901,12 +6901,14 @@ def port_aimbot(src: str, ent: str | None = None) -> str:
     esp_lines.insert(20, "            ctx.lineWidth = Math.max(3, Math.floor(4 * %s));" % SCALE)
     esp_lines.insert(21, "            ctx.strokeStyle = \"#000000\";")
     esp_lines.insert(22, "            ctx.fillStyle = _oC;")
-    esp_lines.insert(23, "            ctx.strokeText(\"#\" + _oPid, _oX, _oY);")
-    esp_lines.insert(24, "            ctx.fillText(\"#\" + _oPid, _oX, _oY);")
-    esp_lines.insert(25, "            ctx.restore();")
-    esp_lines.insert(26, "          }")
-    esp_lines.insert(27, "        }")
-    esp_lines.insert(28, "      } catch (e) {}")
+    esp_lines.insert(23, "            var _oTxt = \"#\" + _oPid;")
+    esp_lines.insert(24, "            try { var _oNn = grokGetNick(_oPl); if (_oNn) _oTxt = _oNn; } catch (e) {}")
+    esp_lines.insert(25, "            ctx.strokeText(_oTxt, _oX, _oY);")
+    esp_lines.insert(26, "            ctx.fillText(_oTxt, _oX, _oY);")
+    esp_lines.insert(27, "            ctx.restore();")
+    esp_lines.insert(28, "          }")
+    esp_lines.insert(29, "        }")
+    esp_lines.insert(30, "      } catch (e) {}")
 
     # secondary overlay: also graft inside each block-render fn that stamps
     # the tile map - tags entities whose own grid cell is hovered even if the
@@ -6937,8 +6939,10 @@ def port_aimbot(src: str, ent: str | None = None) -> str:
             oind + "        ctx.lineWidth = Math.max(3, Math.floor(4 * %s));" % SCALE,
             oind + "        ctx.strokeStyle = \"#000000\";",
             oind + "        ctx.fillStyle = _oC;",
-            oind + "        ctx.strokeText(\"#\" + _oPid, _oX, _oY);",
-            oind + "        ctx.fillText(\"#\" + _oPid, _oX, _oY);",
+            oind + "        var _oTxt = \"#\" + _oPid;",
+            oind + "        try { var _oNn = grokGetNick(_oPl); if (_oNn) _oTxt = _oNn; } catch (e) {}",
+            oind + "        ctx.strokeText(_oTxt, _oX, _oY);",
+            oind + "        ctx.fillText(_oTxt, _oX, _oY);",
             oind + "        ctx.restore();",
             oind + "      }",
             oind + "    }",
