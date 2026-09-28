@@ -5203,12 +5203,20 @@ class AimbotCon {
             } else if (MOD.mouseFovEnable) {
                 target = this.findTarget(GetAllTargets.mouseMapCords, MOD.mouseFov);
             } else {
-                var best = this.findTarget(me, 2500);
                 var prev = this.currentTarget;
-                // soft stick: keep the current target only until another
-                // enemy is clearly closer — lets the player switch targets
-                // while the line does not flicker between equals
-                if (prev && prev !== best && prev.active && !this.isSelf(prev) &&
+                // cursor pick: aim at whoever is nearest the mouse cursor;
+                // fall back to the closest enemy when none is under it
+                var best = null;
+                var fromCursor = false;
+                if (MOD.aimAtCursor && GetAllTargets.mouseMapCords) {
+                    best = this.findTarget(GetAllTargets.mouseMapCords, MOD.aimCursorRadius || 400);
+                    fromCursor = best != null;
+                }
+                if (!best)
+                    best = this.findTarget(me, 2500);
+                // soft stick only for the nearest-enemy fallback: the cursor
+                // pick always wins so the player can switch targets freely
+                if (!fromCursor && prev && prev !== best && prev.active && !this.isSelf(prev) &&
                     calculateDistance(me, prev) < (best ? calculateDistance(me, best) : 2500) + 150) {
                     target = prev;
                 } else {
@@ -5541,6 +5549,8 @@ var MOD = {
     hidePlayerAngle: false,
     exactAim: true,
     aimLagMs: 110,
+    aimAtCursor: true,
+    aimCursorRadius: 400,
     target: "players",
     TargetTeammate: false,
     resolverType: "linear",
@@ -5843,6 +5853,8 @@ function AimbotMenuInit() {
     aimFolder.add(MOD, "AimBotEnabled").name("AimBotEnabled");
     aimFolder.add(MOD, "exactAim").name("ExactAim (no-miss)");
     aimFolder.add(MOD, "aimLagMs", 0, 400, 5).name("AimLagMs");
+    aimFolder.add(MOD, "aimAtCursor").name("AimAtCursor");
+    aimFolder.add(MOD, "aimCursorRadius", 50, 2000, 50).name("CursorRadius");
     aimFolder.add(MOD, "target", ["players", "ghouls", "all"]).name("Target");
     aimFolder.add(MOD, "TargetTeammate").name("TargetTeammate");
     aimFolder.add(MOD, "resolverType", ["linear", "trigonometrical", "none"]).name("ResolverType");
