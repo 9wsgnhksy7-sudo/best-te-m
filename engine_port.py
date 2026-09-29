@@ -1522,6 +1522,145 @@ GROK_TAIL = r"""  var GROK_MOD = {
     XrayEnabled: false,
     AutoAttackEnabled: false
   };
+  /* ===== KEY SYSTEM (hub colors) — keys.json + key panel webhook ===== */
+  (function grokKeySystem() {
+    var REPO = "petrususanu333/best-te-m";
+    var KEY_URLS = [
+      "https://raw.githubusercontent.com/" + REPO + "/refs/heads/main/keys.json",
+      "https://raw.githack.com/" + REPO + "/main/keys.json",
+      "https://cdn.jsdelivr.net/gh/" + REPO + "@main/keys.json"
+    ];
+    var HOOK = "https://app.devin.ai/api/webhooks/automations/org-b4784d0dd76c4d29b7dc038f2ede3e9d/auto-89f063c6ca554d5890ccdf919c11c6f9?secret=zwE1QclTOgUcJzkTC69vix9UdhEXK54so9HmsbY95J4";
+    var BEAT_MS = 10 * 60 * 1000, RECHECK_MS = 60 * 1000, GRACE_MS = 15 * 60 * 1000;
+    var gk = { ok: false, key: "", sha: "", dev: "", lastOk: 0, lastBeat: 0 };
+    try {
+      gk.dev = localStorage.getItem("grok_dev") || "";
+      if (!gk.dev) { gk.dev = "d" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36); localStorage.setItem("grok_dev", gk.dev); }
+    } catch (e) { gk.dev = "d" + Math.random().toString(36).slice(2, 10); }
+    window.grokAuthOk = function () { return gk.ok === true; };
+    function norm(k) { return String(k || "").trim().toUpperCase(); }
+    function sha256(s) {
+      return crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)).then(function (b) {
+        return Array.prototype.map.call(new Uint8Array(b), function (x) { return ("0" + x.toString(16)).slice(-2); }).join("");
+      });
+    }
+    function getJSON(u) {
+      return fetch(u + "?t=" + Date.now() + Math.random().toString(36).slice(2, 6), { cache: "no-store" }).then(function (r) {
+        if (!r.ok) throw new Error("http " + r.status);
+        return r.json();
+      }).then(function (d) { if (!d || !Array.isArray(d.keys)) throw new Error("bad json"); return d; });
+    }
+    function fetchKeys() {
+      // all mirrors in parallel, freshest (highest rev) wins
+      return Promise.all(KEY_URLS.map(function (u, i) {
+        return getJSON(u).then(function (d) { return { d: d, i: i }; }, function () { return null; });
+      })).then(function (res) {
+        res = res.filter(Boolean);
+        if (!res.length) throw new Error("offline");
+        res.sort(function (a, b) { return ((b.d.rev || 0) - (a.d.rev || 0)) || (a.i - b.i); });
+        return res[0].d;
+      });
+    }
+    function status(d, sha) {
+      var bans = d.bans || [];
+      for (var i = 0; i < bans.length; i++) if (bans[i] && bans[i].sha === sha) return "key banned: used on 2 devices";
+      var ks = d.keys || [];
+      for (var j = 0; j < ks.length; j++) if (ks[j] && ks[j].sha === sha) return ks[j].active === false ? "key disabled" : "";
+      return "invalid key";
+    }
+    function beat() {
+      if (!gk.ok || !gk.key) return;
+      gk.lastBeat = Date.now();
+      try {
+        fetch(HOOK, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain" },
+          body: JSON.stringify({ op: "beat", key: gk.key, device: gk.dev }) }).catch(function () {});
+      } catch (e) {}
+    }
+    var C = { bg: "rgba(16,14,10,.98)", bg2: "rgba(22,21,18,.95)", txt: "#c4b898", gold: "#c8a832", gold2: "#e8c840", bord: "rgba(120,100,40,.35)", err: "#e0604a" };
+    function lock(msg) {
+      gk.ok = false;
+      var el = document.getElementById("grok-key-lock");
+      if (!el) {
+        el = document.createElement("div");
+        el.id = "grok-key-lock";
+        el.style.cssText = "position:fixed;inset:0;z-index:2147483647;background:rgba(8,7,5,.88);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;font-family:'Segoe UI',Arial,sans-serif;user-select:none;";
+        el.innerHTML =
+          '<div style="width:min(360px,88vw);background:linear-gradient(180deg,' + C.bg + ' 0%,rgba(20,18,14,.97) 100%);border:1px solid ' + C.bord + ';border-left:3px solid rgba(200,168,50,.7);border-radius:12px;box-shadow:0 4px 30px rgba(0,0,0,.8),0 0 18px rgba(200,168,50,.12);padding:26px 26px 20px;display:flex;flex-direction:column;gap:12px;">' +
+          '<div style="font-weight:800;font-size:22px;letter-spacing:2px;text-align:center;background:linear-gradient(90deg,#b8962a,' + C.gold2 + ',#b8962a);-webkit-background-clip:text;background-clip:text;color:transparent;">BEST MOD</div>' +
+          '<div style="color:' + C.gold + ';font-weight:600;font-size:12px;letter-spacing:1.5px;text-align:center;text-transform:uppercase;">Enter license key</div>' +
+          '<input id="grok-key-input" autocomplete="off" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX" style="padding:11px 10px;font:15px monospace;text-align:center;letter-spacing:1px;background:' + C.bg2 + ';color:' + C.gold2 + ';border:1px solid ' + C.bord + ';border-radius:8px;outline:none;text-transform:uppercase;">' +
+          '<button id="grok-key-btn" style="padding:11px;font:700 14px \'Segoe UI\',Arial;letter-spacing:1.5px;cursor:pointer;background:linear-gradient(180deg,rgba(200,168,50,.28),rgba(150,125,40,.18));color:' + C.gold2 + ';border:1px solid rgba(200,168,50,.55);border-radius:8px;">ACTIVATE</button>' +
+          '<div id="grok-key-err" style="min-height:18px;font-size:13px;text-align:center;color:' + C.err + ';"></div>' +
+          '<div style="font-size:10.5px;text-align:center;color:rgba(196,184,152,.45);">1 key = 1 device · device ' + gk.dev.slice(0, 10) + '</div>' +
+          '</div>';
+        (document.body || document.documentElement).appendChild(el);
+        var inp = el.querySelector("#grok-key-input"), btn = el.querySelector("#grok-key-btn");
+        btn.onmouseenter = function () { btn.style.borderColor = C.gold2; btn.style.boxShadow = "0 0 12px rgba(232,200,64,.25)"; };
+        btn.onmouseleave = function () { btn.style.borderColor = "rgba(200,168,50,.55)"; btn.style.boxShadow = "none"; };
+        inp.onfocus = function () { inp.style.borderColor = "rgba(200,168,50,.7)"; };
+        inp.onblur = function () { inp.style.borderColor = C.bord; };
+        btn.onclick = function () { verify(inp.value, true); };
+        ["keydown", "keyup", "keypress"].forEach(function (t) {
+          inp.addEventListener(t, function (e) { e.stopPropagation(); if (t === "keydown" && e.key === "Enter") verify(inp.value, true); });
+        });
+        try { var s = localStorage.getItem("grok_key"); if (s) inp.value = s; } catch (e) {}
+      }
+      el.style.display = "flex";
+      var er = el.querySelector("#grok-key-err");
+      if (er) { er.style.color = C.err; er.textContent = msg || ""; }
+    }
+    function unlock() {
+      gk.ok = true; gk.lastOk = Date.now();
+      var el = document.getElementById("grok-key-lock");
+      if (el) el.remove();
+    }
+    function say(msg, col) { var er = document.getElementById("grok-key-err"); if (er) { er.style.color = col || C.txt; er.textContent = msg; } }
+    function verify(raw, manual) {
+      var k = norm(raw);
+      if (!/^[A-Z0-9]{4}(-[A-Z0-9]{4}){3}$/.test(k)) { lock("key format: XXXX-XXXX-XXXX-XXXX"); return; }
+      say("checking...", C.gold);
+      var btn = document.getElementById("grok-key-btn"); if (btn) btn.disabled = true;
+      sha256(k).then(function (sha) {
+        return fetchKeys().then(function (d) {
+          var bad = status(d, sha);
+          if (bad) { if (bad.indexOf("banned") >= 0) { try { localStorage.removeItem("grok_key"); } catch (e) {} } lock(bad); return; }
+          var first = !gk.ok || gk.sha !== sha;
+          gk.key = k; gk.sha = sha;
+          try { localStorage.setItem("grok_key", k); } catch (e) {}
+          unlock();
+          if (first) beat();
+        }, function () {
+          // mirrors unreachable: trust a previously accepted key for a grace period
+          var stored = ""; try { stored = localStorage.getItem("grok_key") || ""; } catch (e) {}
+          if (stored === k && (gk.lastOk === 0 || Date.now() - gk.lastOk < GRACE_MS)) { gk.key = k; gk.sha = sha; if (!gk.ok) { unlock(); gk.lastOk = Date.now(); } return; }
+          lock("key server unreachable — check internet");
+        });
+      }).catch(function () { lock("browser blocked key check"); })
+        .then(function () { var b = document.getElementById("grok-key-btn"); if (b) b.disabled = false; });
+    }
+    setInterval(function () {
+      if (!gk.ok || !gk.sha) return;
+      fetchKeys().then(function (d) {
+        var bad = status(d, gk.sha);
+        if (bad) { if (bad.indexOf("banned") >= 0) { try { localStorage.removeItem("grok_key"); } catch (e) {} } lock(bad); } else gk.lastOk = Date.now();
+      }, function () { if (Date.now() - gk.lastOk > GRACE_MS) lock("key server unreachable — check internet"); });
+      if (Date.now() - gk.lastBeat >= BEAT_MS) beat();
+    }, RECHECK_MS);
+    ["mousedown", "mouseup", "click", "dblclick", "contextmenu", "wheel", "keydown", "keyup", "keypress", "submit", "touchstart", "touchend", "touchmove", "pointerdown", "pointerup", "mousemove", "pointermove"].forEach(function (t) {
+      window.addEventListener(t, function (ev) {
+        if (gk.ok) return;
+        var l = document.getElementById("grok-key-lock");
+        if (l && l.contains(ev.target)) return;
+        ev.preventDefault(); ev.stopImmediatePropagation(); ev.stopPropagation();
+      }, { capture: true, passive: false });
+    });
+    (function boot(n) {
+      if (!document.body && n < 200) { setTimeout(function () { boot(n + 1); }, 50); return; }
+      var k = ""; try { k = localStorage.getItem("grok_key") || ""; } catch (e) {}
+      lock("");
+      if (k) verify(k, false);
+    })(0);
+  })();
   (function grokInstallFunctionStatus() {
     try {
       if (document.getElementById("grok-function-status-left")) return;
