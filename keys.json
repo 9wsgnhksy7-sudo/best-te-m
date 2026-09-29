@@ -1,5 +1,15 @@
 {
- "keys": [],
+ "keys": [
+  {
+   "sha": "81e6768754e5667d285f5b6df2646c72a7282931abc7a7f26eb8e04fd1aac0ce",
+   "hint": "J9UZ-\u2026",
+   "label": "key:J9UZ-\u2026 Panda228",
+   "active": true,
+   "ts": 1790679663,
+   "last_seen": 0,
+   "devices": {}
+  }
+ ],
  "sessions": {},
  "bans": [
   {
@@ -37,5 +47,5 @@
    "reason": "two devices"
   }
  ],
- "rev": 25
+ "rev": 26
 }
