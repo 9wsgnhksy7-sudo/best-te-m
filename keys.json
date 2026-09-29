@@ -31,15 +31,6 @@
    }
   },
   {
-   "sha": "71e40caab2054d4b176d5bdc28ffefc9f0c1c3e40b049a94aa921ae739add78e",
-   "hint": "AQSW-\u2026",
-   "label": "key:AQSW-\u2026 Me",
-   "active": true,
-   "ts": 1790689278,
-   "last_seen": 0,
-   "devices": {}
-  },
-  {
    "sha": "fb2a4bf60eb61503eeabd7f639a9266fde58c0d0b0db4744eae258cee2cd85ac",
    "hint": "BBUD-\u2026",
    "label": "key:BBUD-\u2026",
@@ -97,5 +88,5 @@
    "reason": "two devices"
   }
  ],
- "rev": 87
+ "rev": 88
 }
