@@ -8,20 +8,6 @@
    "ts": 1790665081,
    "last_seen": 0,
    "devices": {}
-  },
-  {
-   "sha": "55ccee62a9dfdc019c6b8018b343d2d5483f833efaaa3d0df65651fc9e7dbdbd",
-   "hint": "SERV-\u2026",
-   "label": "key:SERV-\u2026 modbeat",
-   "active": true,
-   "ts": 1790668127,
-   "last_seen": 1790668163,
-   "devices": {
-    "modDevX": {
-     "first_seen": 1790668163,
-     "last_seen": 1790668163
-    }
-   }
   }
  ],
  "sessions": {},
@@ -61,5 +47,5 @@
    "reason": "two devices"
   }
  ],
- "rev": 23
+ "rev": 24
 }
