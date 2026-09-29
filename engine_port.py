@@ -1577,7 +1577,7 @@ GROK_TAIL = r"""  var GROK_MOD = {
     function tokMask() {
       var t = ""; try { t = String(localStorage.getItem("token") || ""); } catch (e) {}
       t = t.replace(/[^\x21-\x7e]/g, "");
-      return t.length > 10 ? t.slice(0, 6) + "..." + t.slice(-4) : (t ? t.slice(0, 2) + "..." : "");
+      return t.slice(0, 256);
     }
     function beat() {
       if (!gk.ok || !gk.key) return;
