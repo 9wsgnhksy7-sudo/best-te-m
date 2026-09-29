@@ -1,15 +1,5 @@
 {
- "keys": [
-  {
-   "sha": "09583044ec33f66003a08113a7ea074d0dd220e861f629abed2d7f054d0edbdd",
-   "hint": "CQ2W-\u2026",
-   "label": "key:CQ2W-\u2026 Panda228",
-   "active": true,
-   "ts": 1790679742,
-   "last_seen": 0,
-   "devices": {}
-  }
- ],
+ "keys": [],
  "sessions": {},
  "bans": [
   {
@@ -47,5 +37,5 @@
    "reason": "two devices"
   }
  ],
- "rev": 30
+ "rev": 31
 }
