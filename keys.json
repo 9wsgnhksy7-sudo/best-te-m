@@ -28,6 +28,15 @@
      "last_seen": 1790683344
     }
    }
+  },
+  {
+   "sha": "4b1c2f571bb743ee25bae44be6ef9a00d7af716359ec58811fe3c332a09e5a1c",
+   "hint": "DSU3-\u2026",
+   "label": "key:DSU3-\u2026 Panda",
+   "active": true,
+   "ts": 1790687504,
+   "last_seen": 0,
+   "devices": {}
   }
  ],
  "sessions": {},
@@ -78,5 +87,5 @@
    "reason": "two devices"
   }
  ],
- "rev": 70
+ "rev": 71
 }
