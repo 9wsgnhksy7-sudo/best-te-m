@@ -1,15 +1,5 @@
 {
- "keys": [
-  {
-   "sha": "0066760c39e340abcb3ac4aca9c743196f927f1dbc1cb87457541eb826530cdc",
-   "hint": "JMZD-\u2026",
-   "label": "key:JMZD-\u2026 Panda228",
-   "active": true,
-   "ts": 1790680030,
-   "last_seen": 0,
-   "devices": {}
-  }
- ],
+ "keys": [],
  "sessions": {},
  "bans": [
   {
@@ -47,5 +37,5 @@
    "reason": "two devices"
   }
  ],
- "rev": 32
+ "rev": 33
 }
