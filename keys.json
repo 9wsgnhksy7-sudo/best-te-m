@@ -1,6 +1,16 @@
 {
- "keys": [],
+ "keys": [
+  {
+   "sha": "26d9f7053a74d1a4567fd59462ece308e24636df6a0fcf281fd74d8691fbba1a",
+   "hint": "YGZ7-\u2026",
+   "label": "key:YGZ7-\u2026 Abricos",
+   "active": true,
+   "ts": 1790665081,
+   "last_seen": 0,
+   "devices": {}
+  }
+ ],
  "sessions": {},
  "bans": [],
- "rev": 8
+ "rev": 9
 }
