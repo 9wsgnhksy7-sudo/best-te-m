@@ -26,9 +26,18 @@
    "ts": 1790586397,
    "last_seen": 0,
    "devices": {}
+  },
+  {
+   "sha": "35906df1e0f7bb216789121ddaec2dee61b32ffcf7e33ca6b894040681d7fa4b",
+   "hint": "CDZ4-\u2026",
+   "label": "key:CDZ4-\u2026 e2etest",
+   "active": true,
+   "ts": 1790664401,
+   "last_seen": 0,
+   "devices": {}
   }
  ],
  "sessions": {},
  "bans": [],
- "rev": 3
+ "rev": 4
 }
