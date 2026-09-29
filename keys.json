@@ -51,11 +51,16 @@
    "label": "key:V6QK-\u2026",
    "active": true,
    "ts": 1790696533,
-   "last_seen": 0,
-   "devices": {}
+   "last_seen": 1790696668,
+   "devices": {
+    "db85mp67kmumudvln": {
+     "last_seen": 1790696668,
+     "first_seen": 1790696668
+    }
+   }
   }
  ],
  "sessions": {},
  "bans": [],
- "rev": 113
+ "rev": 114
 }
