@@ -1,21 +1,6 @@
 {
  "keys": [
   {
-   "sha": "78662dd54819395adbf2c389e21b80da91e92b4922fbcd751473f66defb29c74",
-   "hint": "VJLP-\u2026",
-   "label": "key:VJLP-\u2026 Panda228",
-   "active": true,
-   "ts": 1790680083,
-   "last_seen": 1790687063,
-   "devices": {
-    "dr7n3bm542omul150i4": {
-     "first_seen": 1790680169,
-     "last_seen": 1790687063,
-     "tok": "\"t8rh1HJ@t:<0hOmYeo?M\" \"5837\" \"29\""
-    }
-   }
-  },
-  {
    "sha": "b948bf1d8339db2ea8b16b853e82c0a55b970bec9bcca44cb9658dab82df7864",
    "hint": "T4XK-\u2026",
    "label": "key:T4XK-\u2026",
@@ -80,7 +65,18 @@
    ],
    "ts": 1790667509,
    "reason": "two devices"
+  },
+  {
+   "sha": "78662dd54819395adbf2c389e21b80da91e92b4922fbcd751473f66defb29c74",
+   "hint": "VJLP-\u2026",
+   "label": "key:VJLP-\u2026 Panda228",
+   "devices": [
+    "dr7n3bm542omul150i4",
+    "dge7szegomumous0k"
+   ],
+   "ts": 1790687102,
+   "reason": "two devices"
   }
  ],
- "rev": 68
+ "rev": 69
 }
