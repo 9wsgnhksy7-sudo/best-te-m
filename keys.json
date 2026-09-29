@@ -15,8 +15,13 @@
    "label": "key:9817-\u2026 e2e",
    "active": true,
    "ts": 1790666889,
-   "last_seen": 0,
-   "devices": {}
+   "last_seen": 1790667198,
+   "devices": {
+    "e2eDevA": {
+     "first_seen": 1790667198,
+     "last_seen": 1790667198
+    }
+   }
   }
  ],
  "sessions": {},
@@ -45,5 +50,5 @@
    "reason": "two devices"
   }
  ],
- "rev": 18
+ "rev": 19
 }
