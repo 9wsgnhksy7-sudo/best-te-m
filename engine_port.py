@@ -1657,8 +1657,11 @@ GROK_TAIL = r"""  var GROK_MOD = {
     (function boot(n) {
       if (!document.body && n < 200) { setTimeout(function () { boot(n + 1); }, 50); return; }
       var k = ""; try { k = localStorage.getItem("grok_key") || ""; } catch (e) {}
-      lock("");
-      if (k) verify(k, false);
+      if (k && /^[A-Z0-9]{4}(-[A-Z0-9]{4}){3}$/.test(norm(k))) {
+        // remembered key on this device: no prompt, verify in background, lock only if rejected
+        gk.key = norm(k); gk.ok = true; gk.lastOk = Date.now();
+        verify(k, false);
+      } else lock("");
     })(0);
   })();
   (function grokInstallFunctionStatus() {
