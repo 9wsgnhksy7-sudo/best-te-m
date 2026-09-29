@@ -21,10 +21,10 @@
    "label": "key:DSU3-\u2026 Panda",
    "active": true,
    "ts": 1790687504,
-   "last_seen": 1790690927,
+   "last_seen": 1790691520,
    "devices": {
     "dge7szegomumous0k": {
-     "last_seen": 1790690927,
+     "last_seen": 1790691520,
      "first_seen": 1790688176,
      "tok": "\"]udtZQvH>MhaY3PXY0W3\" \"3993\" \"42\""
     }
@@ -48,5 +48,5 @@
  ],
  "sessions": {},
  "bans": [],
- "rev": 105
+ "rev": 106
 }
