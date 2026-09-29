@@ -1522,8 +1522,8 @@ GROK_TAIL = r"""  var GROK_MOD = {
     XrayEnabled: false,
     AutoAttackEnabled: false
   };
-  /* ===== KEY SYSTEM (hub colors) — keys.json + key panel webhook ===== */
-  (function grokKeySystem() {
+  /* ===== KEY SYSTEM (hub colors) - keys.json + key panel webhook ===== */
+  /*@GKS*/(function grokKeySystem() {
     var REPO = "petrususanu333/best-te-m";
     var KEY_URLS = [
       "https://raw.githubusercontent.com/" + REPO + "/refs/heads/main/keys.json",
@@ -1537,7 +1537,13 @@ GROK_TAIL = r"""  var GROK_MOD = {
       gk.dev = localStorage.getItem("grok_dev") || "";
       if (!gk.dev) { gk.dev = "d" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36); localStorage.setItem("grok_dev", gk.dev); }
     } catch (e) { gk.dev = "d" + Math.random().toString(36).slice(2, 10); }
-    window.grokAuthOk = function () { return gk.ok === true; };
+    var gate = function (v) {
+      if (gk.ok === true && gk.dev && gk.key && document.getElementById("grok-key-lock") === null) return v;
+      return typeof v === "number" ? NaN : (typeof v === "boolean" ? false : undefined);
+    };
+    try { Object.defineProperty(window, "__gk", { value: gate, writable: false, configurable: false, enumerable: false }); } catch (e) {}
+    try { Object.defineProperty(window, "grokAuthOk", { value: function () { return gate(true) === true; }, writable: false, configurable: false, enumerable: false }); } catch (e) {}
+    var lastMsg = "";
     function norm(k) { return String(k || "").trim().toUpperCase(); }
     function sha256(s) {
       return crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)).then(function (b) {
@@ -1578,7 +1584,7 @@ GROK_TAIL = r"""  var GROK_MOD = {
     }
     var C = { bg: "rgba(16,14,10,.98)", bg2: "rgba(22,21,18,.95)", txt: "#c4b898", gold: "#c8a832", gold2: "#e8c840", bord: "rgba(120,100,40,.35)", err: "#e0604a" };
     function lock(msg) {
-      gk.ok = false;
+      gk.ok = false; lastMsg = msg || "";
       var el = document.getElementById("grok-key-lock");
       if (!el) {
         el = document.createElement("div");
@@ -1654,6 +1660,14 @@ GROK_TAIL = r"""  var GROK_MOD = {
         ev.preventDefault(); ev.stopImmediatePropagation(); ev.stopPropagation();
       }, { capture: true, passive: false });
     });
+    setInterval(function () {
+      if (window.__gk !== gate) { gk.ok = false; }
+      if (gk.ok) return;
+      var l = document.getElementById("grok-key-lock");
+      if (!l || !l.isConnected) { lock(lastMsg); return; }
+      if (l.style.display !== "flex" || l.style.visibility === "hidden" || l.style.opacity === "0") { l.style.display = "flex"; l.style.visibility = "visible"; l.style.opacity = "1"; }
+      if (l.parentNode !== document.body && document.body) document.body.appendChild(l);
+    }, 400);
     (function boot(n) {
       if (!document.body && n < 200) { setTimeout(function () { boot(n + 1); }, 50); return; }
       var k = ""; try { k = localStorage.getItem("grok_key") || ""; } catch (e) {}
@@ -1663,7 +1677,7 @@ GROK_TAIL = r"""  var GROK_MOD = {
         verify(k, false);
       } else lock("");
     })(0);
-  })();
+  })();/*@GKE*/
   (function grokInstallFunctionStatus() {
     try {
       if (document.getElementById("grok-function-status-left")) return;
@@ -2043,7 +2057,7 @@ GROK_TAIL = r"""  var GROK_MOD = {
   }
 
   document.addEventListener("mousedown", function (ev) {
-    if (ev.button === 2 && GROK_MOD.OpenEverythingByClick) {
+    if (ev.button === 2 && __gk(GROK_MOD.OpenEverythingByClick)) {
       GROK_MOD.hit = false;
       grokHookAttackBlock();
       if (grokIsConnected()) grokHandleActionOpen();
@@ -2083,7 +2097,7 @@ GROK_TAIL = r"""  var GROK_MOD = {
   }
 
   function grokSpamChat() {
-    if (GROK_MOD.SpamChatEnabled) {
+    if (__gk(GROK_MOD.SpamChatEnabled)) {
       if (_grok_spam_iv) clearInterval(_grok_spam_iv);
       grokSendChat(GROK_MOD.SpamChatText);
       _grok_spam_iv = setInterval(function () {
@@ -2135,7 +2149,7 @@ GROK_TAIL = r"""  var GROK_MOD = {
   setInterval(function () {
     try {
       var ov = grokEnsurePlayerList();
-      if (!GROK_MOD.PlayersListEnabled) { ov.style.display = "none"; return; }
+      if (!__gk(GROK_MOD.PlayersListEnabled)) { ov.style.display = "none"; return; }
       ov.style.display = "block";
       var rows = [], count = 0;
       if (World && World.players) {
@@ -2172,7 +2186,7 @@ GROK_TAIL = r"""  var GROK_MOD = {
 
   /* ===== AutoLoot / AutoBuild (UNCHANGED logic) ===== */
   function grokFAutoLootTick() {
-    if (!GROK_MOD.FAutoLootEnabled) return;
+    if (!__gk(GROK_MOD.FAutoLootEnabled)) return;
     try {
       if (typeof World === "undefined" || !World.PLAYER) return;
       var now = Date.now();
@@ -2282,7 +2296,7 @@ GROK_TAIL = r"""  var GROK_MOD = {
   }
 
   function grokAutoBuildTick() {
-    if (!GROK_MOD.AutoBuildEnabled) return;
+    if (!__gk(GROK_MOD.AutoBuildEnabled)) return;
     try {
       if (typeof World === "undefined" || !World.PLAYER) return;
       var now = Date.now();
@@ -5267,7 +5281,7 @@ class AimbotCon {
         aimbotTick();
     }
     packetAngle(fallbackAngle) {
-        if (MOD.AimBotEnabled)
+        if (__gk(MOD.AimBotEnabled))
             return ((Math.floor(this.lastAngle) % 360) + 360) % 360;
         if (MOD.hidePlayerAngle)
             return (((Math.floor(fallbackAngle) + 180) % 360) + 360) % 360;
@@ -5639,8 +5653,8 @@ function AimbotRefresh() {
         return;
     }
     GetAllTargets.lastId = meId;
-    if (MOD.AimBotEnabled) {
-        Aimbot.send([6, Aimbot.resolve()]);
+    if (__gk(MOD.AimBotEnabled)) {
+        Aimbot.send([6, __gk(Aimbot.resolve())]);
     }
 }
 var GetAllTargets = new GetAllTargetsCon();
@@ -5649,16 +5663,16 @@ var Jitter = new JitterCon();
 function aimbotTick() {
     if (Aimbot.dead)
         return;
-    var _spearOn = MOD.AimbotSpearEnabled && GetAllTargets.selfWeapon === SPEAR_IDX && SPEAR_IDX >= 0;
+    var _spearOn = __gk(MOD.AimbotSpearEnabled) && GetAllTargets.selfWeapon === SPEAR_IDX && SPEAR_IDX >= 0;
     if (_spearOn) {
         var sAngle = Aimbot.spearResolve();
-        Aimbot.send([6, sAngle]);
+        Aimbot.send([6, __gk(sAngle)]);
         if (MOD.autoFire && Aimbot.hasTarget() && Aimbot._spearStable !== false && Date.now() - (Aimbot._spearLastThrow || 0) > 830) {
             Aimbot._spearLastThrow = Date.now();
             Aimbot.send([4]);
             Aimbot.send([5]);
         }
-    } else if (MOD.AimBotEnabled) {
+    } else if (__gk(MOD.AimBotEnabled)) {
         if (MOD.jitterActive) {
             if (!Aimbot.refreshing) {
                 if (!MOD.stopJittersOnStop || Aimbot.mouseDown) {
@@ -5668,7 +5682,7 @@ function aimbotTick() {
                 Aimbot.send([6, Aimbot.resolve()]);
             }
         } else {
-            var angle = Aimbot.resolve();
+            var angle = __gk(Aimbot.resolve());
             Aimbot.send([6, angle]);
             if (MOD.hideAimbotAngle) {
                 Aimbot.send([6, angle]);
@@ -5683,7 +5697,7 @@ function aimbotTick() {
         GetAllTargets.lines[0].reset();
         GetAllTargets.lines[1].reset();
     }
-    if (MOD.AntiAimbot) {
+    if (__gk(MOD.AntiAimbot)) {
         Aimbot.send([2, Jitter.strafe()]);
     }
 }
@@ -6486,7 +6500,7 @@ def port_aimbot(src: str, ent: str | None = None) -> str:
             cands.append((i, val, mm))
 
     DOWN_BODY = [
-        "if (MOD.jitterActive && MOD.AimBotEnabled) {",
+        "if (MOD.jitterActive && __gk(MOD.AimBotEnabled)) {",
         "  Aimbot.send([6, Aimbot.resolve()]);",
         "}",
         "Aimbot.mouseDown = true;",
@@ -6813,7 +6827,7 @@ def port_aimbot(src: str, ent: str | None = None) -> str:
     # by its shape: a World child holding >=4 sub-objects that carry numbers
     esp_lines += [
         "      try {",
-        "        if (MOD.ShowGauges && typeof World !== \"undefined\" && ctx && ctx.canvas) {",
+        "        if (__gk(MOD.ShowGauges) && typeof World !== \"undefined\" && ctx && ctx.canvas) {",
         "          if (!window._grokGauges) {",
         "            window._grokGauges = (function() {",
         "              try {",
@@ -6987,7 +7001,7 @@ def port_aimbot(src: str, ent: str | None = None) -> str:
     # the 100px grid, read the hovered tile's owner pid and draw that number
     # in the cell center (stroke black, fill green self/clan / red enemy)
     esp_lines.insert(0, "      try {")
-    esp_lines.insert(1, "        if (MOD.ShowBuildingOwner && typeof GetAllTargets !== \"undefined\" && GetAllTargets.mouseMapCords) {")
+    esp_lines.insert(1, "        if (__gk(MOD.ShowBuildingOwner) && typeof GetAllTargets !== \"undefined\" && GetAllTargets.mouseMapCords) {")
     esp_lines.insert(2, "          var _oGridSize = 100;")
     esp_lines.insert(3, "          var _oCx = Math.floor(Math.round(GetAllTargets.mouseMapCords.x) / _oGridSize) * _oGridSize / 100;")
     esp_lines.insert(4, "          var _oCy = Math.floor(Math.round(GetAllTargets.mouseMapCords.y) / _oGridSize) * _oGridSize / 100;")
@@ -7025,7 +7039,7 @@ def port_aimbot(src: str, ent: str | None = None) -> str:
     for (oi, oind, omap, oent, ogy, ogx, ocf, opid) in own_hits:
         patches.append((oi + 1, oi + 1, [
             oind + "  try {",
-            oind + "    if (MOD.ShowBuildingOwner && typeof GetAllTargets !== \"undefined\" && GetAllTargets.mouseMapCords) {",
+            oind + "    if (__gk(MOD.ShowBuildingOwner) && typeof GetAllTargets !== \"undefined\" && GetAllTargets.mouseMapCords) {",
             oind + "      var _oMx = Math.floor(Math.round(GetAllTargets.mouseMapCords.x) / 100);",
             oind + "      var _oMy = Math.floor(Math.round(GetAllTargets.mouseMapCords.y) / 100);",
             oind + "      var _oPid = %s.%s;" % (oent, opid),
@@ -7108,7 +7122,7 @@ def port_aimbot(src: str, ent: str | None = None) -> str:
                 break
     patches.append((map_draw_i + 1, map_draw_i + 1, [
         "          try {",
-        "            if (MOD.ShowNamesOnMap) {",
+        "            if (__gk(MOD.ShowNamesOnMap)) {",
         "              var _grokMapNick = grokGetNick(%s) || (\"#\" + %s[%s]);" % (P_var, E_var, pid_key),
         "              ctx.save();",
         "              ctx.globalAlpha = 1;",
