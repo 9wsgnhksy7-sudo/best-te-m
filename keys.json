@@ -13,6 +13,15 @@
      "last_seen": 1790680202
     }
    }
+  },
+  {
+   "sha": "b948bf1d8339db2ea8b16b853e82c0a55b970bec9bcca44cb9658dab82df7864",
+   "hint": "T4XK-\u2026",
+   "label": "key:T4XK-\u2026",
+   "active": true,
+   "ts": 1790680525,
+   "last_seen": 0,
+   "devices": {}
   }
  ],
  "sessions": {},
@@ -52,5 +61,5 @@
    "reason": "two devices"
   }
  ],
- "rev": 38
+ "rev": 39
 }
