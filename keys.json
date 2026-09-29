@@ -15,8 +15,13 @@
    "label": "key:BAN2-\u2026 bantest2",
    "active": true,
    "ts": 1790665547,
-   "last_seen": 0,
-   "devices": {}
+   "last_seen": 1790665601,
+   "devices": {
+    "phoneA-111": {
+     "first_seen": 1790665601,
+     "last_seen": 1790665601
+    }
+   }
   }
  ],
  "sessions": {},
@@ -34,5 +39,5 @@
    ]
   }
  ],
- "rev": 15
+ "rev": 16
 }
