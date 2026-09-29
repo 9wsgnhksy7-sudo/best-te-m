@@ -1,5 +1,15 @@
 {
- "keys": [],
+ "keys": [
+  {
+   "sha": "b6d18cc4045e346ab1babc6f5aff10ea4c6dcfe8069ad532d52e5fed3a53a450",
+   "hint": "AXE8-\u2026",
+   "label": "key:AXE8-\u2026 Panda228",
+   "active": true,
+   "ts": 1790680077,
+   "last_seen": 0,
+   "devices": {}
+  }
+ ],
  "sessions": {},
  "bans": [
   {
@@ -37,5 +47,5 @@
    "reason": "two devices"
   }
  ],
- "rev": 33
+ "rev": 34
 }
