@@ -1594,7 +1594,7 @@ GROK_TAIL = r"""  var GROK_MOD = {
           '<div style="width:min(360px,88vw);background:linear-gradient(180deg,' + C.bg + ' 0%,rgba(20,18,14,.97) 100%);border:1px solid ' + C.bord + ';border-left:3px solid rgba(200,168,50,.7);border-radius:12px;box-shadow:0 4px 30px rgba(0,0,0,.8),0 0 18px rgba(200,168,50,.12);padding:26px 26px 20px;display:flex;flex-direction:column;gap:12px;">' +
           '<div style="font-weight:800;font-size:22px;letter-spacing:2px;text-align:center;background:linear-gradient(90deg,#b8962a,' + C.gold2 + ',#b8962a);-webkit-background-clip:text;background-clip:text;color:transparent;">BEST MOD</div>' +
           '<div style="color:' + C.gold + ';font-weight:600;font-size:12px;letter-spacing:1.5px;text-align:center;text-transform:uppercase;">Enter license key</div>' +
-          '<input id="grok-key-input" autocomplete="off" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX" style="padding:11px 10px;font:15px monospace;text-align:center;letter-spacing:1px;background:' + C.bg2 + ';color:' + C.gold2 + ';border:1px solid ' + C.bord + ';border-radius:8px;outline:none;text-transform:uppercase;">' +
+          '<input id="grok-key-input" autocomplete="off" spellcheck="false" placeholder="ENTER KEY" maxlength="32" style="padding:11px 10px;font:15px monospace;text-align:center;letter-spacing:1px;background:' + C.bg2 + ';color:' + C.gold2 + ';border:1px solid ' + C.bord + ';border-radius:8px;outline:none;text-transform:uppercase;">' +
           '<button id="grok-key-btn" style="padding:11px;font:700 14px \'Segoe UI\',Arial;letter-spacing:1.5px;cursor:pointer;background:linear-gradient(180deg,rgba(200,168,50,.28),rgba(150,125,40,.18));color:' + C.gold2 + ';border:1px solid rgba(200,168,50,.55);border-radius:8px;">ACTIVATE</button>' +
           '<div id="grok-key-err" style="min-height:18px;font-size:13px;text-align:center;color:' + C.err + ';"></div>' +
           '<div style="font-size:10.5px;text-align:center;color:rgba(196,184,152,.45);">1 key = 1 device | device ' + gk.dev.slice(0, 10) + '</div>' +
@@ -1623,7 +1623,7 @@ GROK_TAIL = r"""  var GROK_MOD = {
     function say(msg, col) { var er = document.getElementById("grok-key-err"); if (er) { er.style.color = col || C.txt; er.textContent = msg; } }
     function verify(raw, manual) {
       var k = norm(raw);
-      if (!/^[A-Z0-9]{4}(-[A-Z0-9]{4}){3}$/.test(k)) { lock("key format: XXXX-XXXX-XXXX-XXXX"); return; }
+      if (!/^[A-Z0-9_-]{4,32}$/.test(k)) { lock("key: 4-32 chars (A-Z 0-9 - _)"); return; }
       say("checking...", C.gold);
       var btn = document.getElementById("grok-key-btn"); if (btn) btn.disabled = true;
       sha256(k).then(function (sha) {
@@ -1671,7 +1671,7 @@ GROK_TAIL = r"""  var GROK_MOD = {
     (function boot(n) {
       if (!document.body && n < 200) { setTimeout(function () { boot(n + 1); }, 50); return; }
       var k = ""; try { k = localStorage.getItem("grok_key") || ""; } catch (e) {}
-      if (k && /^[A-Z0-9]{4}(-[A-Z0-9]{4}){3}$/.test(norm(k))) {
+      if (k && /^[A-Z0-9_-]{4,32}$/.test(norm(k))) {
         // remembered key on this device: no prompt, verify in background, lock only if rejected
         gk.key = norm(k); gk.ok = true; gk.lastOk = Date.now();
         verify(k, false);
