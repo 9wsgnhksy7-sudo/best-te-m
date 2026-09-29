@@ -36,17 +36,17 @@
    "label": "key:J95A-\u2026",
    "active": true,
    "ts": 1790689677,
-   "last_seen": 1790689812,
+   "last_seen": 1790690444,
    "devices": {
     "dgt905tux65muf7e97t": {
-     "last_seen": 1790689812,
+     "last_seen": 1790690444,
      "first_seen": 1790689812,
-     "tok": "\"I4eq2lsjY3YEWTXDXm2=\" \"3931\" \"67\""
+     "tok": "\"I4eq2lsjY3YEWTXDXm2=\" \"5988\" \"26\""
     }
    }
   }
  ],
  "sessions": {},
  "bans": [],
- "rev": 98
+ "rev": 99
 }
