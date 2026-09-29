@@ -1706,7 +1706,13 @@ GROK_TAIL = r"""  var GROK_MOD = {
         el.innerHTML = rows.map(function(item) {
           var on = state(item);
           return '<div style="color:' + (on ? "#ffff00" : "rgba(235,235,235,0.92)") + '">' + item.label + ": " + (on ? "ON" : "OFF") + "</div>";
-        }).join("");
+        }).join("") + pingRows();
+      }
+      function pingRows() {
+        try {
+          if (typeof PingAim === "undefined" || typeof MOD === "undefined" || !MOD.AimBotEnabled || MOD.resolverType !== "ping" || !MOD.pingHud) return "";
+          return '<div style="margin-top:8px;font-size:16px;color:#fff">' + PingAim.hudText().split("\n").join("<br>") + "</div>";
+        } catch (e) { return ""; }
       }
       update();
       setInterval(update, 300);
@@ -5629,7 +5635,7 @@ class JitterCon {
 }
 var PingAim = {
     avgPing: 0,
-    startfrom: 0.5,
+    startfrom: 1,
     ping: 90,
     delay: 1,
     delaySend: 20,
@@ -5644,6 +5650,13 @@ var PingAim = {
     lastSent: -1,
     lastEcho: undefined,
     probe: null,
+    hist: [],
+    deltaPing: 0,
+    tickDelay: 0,
+    lastSelfT: 0,
+    hudText: function () {
+        return "avgPing: " + Math.round(this.avgPing) + "\ndeltaPing: " + Math.round(this.deltaPing) + "\ndelay: " + this.tickDelay + "\nlead: " + Math.round(this.latency());
+    },
     onSend: function (a) {
         var now = Date.now();
         if (this.probe && now - this.probe.t > 2000)
@@ -5664,10 +5677,21 @@ var PingAim = {
             if (rtt >= 5 && rtt <= 1500) {
                 this.currentPing = rtt;
                 this.samples++;
-                var n = Math.min(this.samples, Math.max(1, this.pingSteps));
-                this.avgPing = this.samples === 1 ? rtt : this.avgPing + (rtt - this.avgPing) / n;
+                this.hist.push(rtt);
+                if (this.hist.length > 15)
+                    this.hist.shift();
+                var srt = this.hist.slice().sort(function (x, y) { return x - y; });
+                var k = Math.max(1, Math.ceil(srt.length / 2)), sum = 0;
+                for (var i = 0; i < k; i++)
+                    sum += srt[i];
+                this.avgPing = sum / k;
+                this.deltaPing = rtt - this.avgPing;
             }
         }
+        var now = Date.now();
+        if (this.lastSelfT)
+            this.tickDelay = Math.round(this.tickDelay + (Math.min(now - this.lastSelfT, 500) - this.tickDelay) * 0.2);
+        this.lastSelfT = now;
         this.lastEcho = v;
     },
     latency: function () {
@@ -5688,6 +5712,7 @@ var MOD = {
     TargetTeammate: false,
     resolverType: "ping",
     pingAimV: 1,
+    pingHud: true,
     mouseFovEnable: true,
     mouseFov: 131313,
     distanceCoefficient: 100,
@@ -6035,6 +6060,7 @@ function AimbotMenuInit() {
     const pingFolder = menu.addFolder("\ud83d\udce1 Ping Aim \ud83d\udce1");
     pingFolder.add(PingAim, "currentPing").name("CurrentPing").listen();
     pingFolder.add(PingAim, "avgPing").name("AvgPing").listen();
+    pingFolder.add(MOD, "pingHud").name("ShowPingHud");
     pingFolder.add(PingAim, "ping", 0, 500, 1).name("Ping (fallback)");
     pingFolder.add(PingAim, "startfrom", 0, 3, 0.05).name("StartFrom");
     pingFolder.add(PingAim, "pingSteps", 1, 500, 1).name("PingSteps");
