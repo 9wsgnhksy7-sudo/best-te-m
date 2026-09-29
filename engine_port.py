@@ -6841,43 +6841,41 @@ def port_aimbot(src: str, ent: str | None = None) -> str:
                                       TILEPERS, _ent, TILEPERS),
             ]))
 
-    # primary overlay: read the native tile map in the frame fn - covers every
-    # block regardless of which render fn draws it
+    # primary overlay: donor-exact ShowBuildingOwner - snap mouseMapCords to
+    # the 100px grid, read the hovered tile's owner pid and draw that number
+    # in the cell center (stroke black, fill green self/clan / red enemy)
     esp_lines.insert(0, "      try {")
-    esp_lines.insert(1, "        if (MOD.ShowBuildingOwner && typeof GetAllTargets !== \"undefined\" && GetAllTargets.mousePosition) {")
-    esp_lines.insert(2, "          var _oCx = Math.floor((GetAllTargets.mousePosition.x / %s - %s) / 100);" % (SCALE, CAMX))
-    esp_lines.insert(3, "          var _oCy = Math.floor((GetAllTargets.mousePosition.y / %s - %s) / 100);" % (SCALE, CAMY))
-    esp_lines.insert(4, "          var _oCel = (%s[_oCy] && %s[_oCy][_oCx]) || null;" % (TILEMAP, TILEMAP))
+    esp_lines.insert(1, "        if (MOD.ShowBuildingOwner && typeof GetAllTargets !== \"undefined\" && GetAllTargets.mouseMapCords) {")
+    esp_lines.insert(2, "          var _oGridSize = 100;")
+    esp_lines.insert(3, "          var _oCx = Math.floor(Math.round(GetAllTargets.mouseMapCords.x) / _oGridSize) * _oGridSize / 100;")
+    esp_lines.insert(4, "          var _oCy = Math.floor(Math.round(GetAllTargets.mouseMapCords.y) / _oGridSize) * _oGridSize / 100;")
+    esp_lines.insert(5, "          var _oCel = (%s[_oCy] && %s[_oCy][_oCx]) || null;" % (TILEMAP, TILEMAP))
     _pid_expr = ("(_oCel.%s || _oCel.%s)" % (TILEPERS, TILEOWN)) if TILEPERS \
         else "_oCel.%s" % TILEOWN
-    esp_lines.insert(5, "          var _oPid = _oCel ? %s : 0;" % _pid_expr)
+    esp_lines.insert(6, "          var _oPid = _oCel ? %s : 0;" % _pid_expr)
     _hasb = ("_oCel.%s !== %s && _oCel.%s !== 0"
              % (TILETYPE, TILETYPE_INIT, TILETYPE)) if TILETYPE else "true"
-    esp_lines.insert(6, "          var _oHasB = _oCel && %s;" % _hasb)
-    esp_lines.insert(7, "          try { window._oDbgOwn = { cx: _oCx, cy: _oCy, pid: _oPid, hasB: !!_oHasB, ty: _oCel && _oCel.%s }; } catch (e) {}" % (TILETYPE or "\"?\""))
-    esp_lines.insert(8, "          if (_oCel && _oPid && _oPid > 0) {")
-    esp_lines.insert(9, "            var _oPl = World.players && World.players[_oPid];")
-    esp_lines.insert(10, "            var _oC = \"#FF3030\";")
-    esp_lines.insert(11, "            if (World.PLAYER && _oPid === World.PLAYER[%s]) _oC = \"#00FF00\";" % MYID)
-    esp_lines.insert(12, "            else if (_oPl && World.PLAYER && World.PLAYER.%s !== -1 && _oPl.%s === World.PLAYER.%s) _oC = \"#00FF00\";" % (T_clan, T_clan, T_clan))
-    esp_lines.insert(13, "            var _oX = (%s + _oCx * 100 + 50) * %s;" % (CAMX, SCALE))
-    esp_lines.insert(14, "            var _oY = (%s + _oCy * 100 + 50) * %s;" % (CAMY, SCALE))
-    esp_lines.insert(15, "            ctx.save();")
-    esp_lines.insert(16, "            ctx.globalAlpha = 1;")
-    esp_lines.insert(17, "            ctx.textAlign = \"center\";")
-    esp_lines.insert(18, "            ctx.textBaseline = \"middle\";")
-    esp_lines.insert(19, "            ctx.font = \"700 \" + Math.max(14, Math.floor(20 * %s)) + \"px Viga, Arial, sans-serif\";" % SCALE)
-    esp_lines.insert(20, "            ctx.lineWidth = Math.max(3, Math.floor(4 * %s));" % SCALE)
-    esp_lines.insert(21, "            ctx.strokeStyle = \"#000000\";")
+    esp_lines.insert(7, "          try { window._oDbgOwn = { cx: _oCx, cy: _oCy, pid: _oPid, hasB: !!(_oCel && %s), ty: _oCel && _oCel.%s }; } catch (e) {}" % (_hasb, TILETYPE or "\"?\""))
+    esp_lines.insert(8, "          if (_oCel && _oPid !== 0) {")
+    esp_lines.insert(9, "            var _oCounterX = %s * (_oCx * 100 + %s + 50);" % (SCALE, CAMX))
+    esp_lines.insert(10, "            var _oCounterY = %s * (_oCy * 100 + %s + 50);" % (SCALE, CAMY))
+    esp_lines.insert(11, "            ctx.save();")
+    esp_lines.insert(12, "            ctx.lineWidth = 4;")
+    esp_lines.insert(13, "            ctx.strokeStyle = \"#000000\";")
+    esp_lines.insert(14, "            ctx.font = \"20px 'Viga', sans-serif\";")
+    esp_lines.insert(15, "            ctx.textAlign = \"center\";")
+    esp_lines.insert(16, "            ctx.textBaseline = \"middle\";")
+    esp_lines.insert(17, "            ctx.strokeText(_oPid, _oCounterX, _oCounterY);")
+    esp_lines.insert(18, "            var _oPl = World.players && World.players[_oPid];")
+    esp_lines.insert(19, "            var _oC = \"#FF0000\";")
+    esp_lines.insert(20, "            if (World.PLAYER && _oPid === World.PLAYER[%s]) { _oC = \"#00FF00\"; }" % MYID)
+    esp_lines.insert(21, "            else if (_oPl && _oPl.%s !== -1) { _oC = (World.PLAYER && _oPl.%s === World.PLAYER.%s) ? \"#00FF00\" : \"#FF0000\"; }" % (T_clan, T_clan, T_clan))
     esp_lines.insert(22, "            ctx.fillStyle = _oC;")
-    esp_lines.insert(23, "            var _oTxt = \"#\" + _oPid;")
-    esp_lines.insert(24, "            try { var _oNn = grokGetNick(_oPl); if (_oNn) _oTxt = _oNn; } catch (e) {}")
-    esp_lines.insert(25, "            ctx.strokeText(_oTxt, _oX, _oY);")
-    esp_lines.insert(26, "            ctx.fillText(_oTxt, _oX, _oY);")
-    esp_lines.insert(27, "            ctx.restore();")
-    esp_lines.insert(28, "          }")
-    esp_lines.insert(29, "        }")
-    esp_lines.insert(30, "      } catch (e) {}")
+    esp_lines.insert(23, "            ctx.fillText(_oPid, _oCounterX, _oCounterY);")
+    esp_lines.insert(24, "            ctx.restore();")
+    esp_lines.insert(25, "          }")
+    esp_lines.insert(26, "        }")
+    esp_lines.insert(27, "      } catch (e) {}")
 
     # secondary overlay: also graft inside each block-render fn that stamps
     # the tile map - tags entities whose own grid cell is hovered even if the
@@ -6885,33 +6883,26 @@ def port_aimbot(src: str, ent: str | None = None) -> str:
     for (oi, oind, omap, oent, ogy, ogx, ocf, opid) in own_hits:
         patches.append((oi + 1, oi + 1, [
             oind + "  try {",
-            oind + "    if (MOD.ShowBuildingOwner && typeof GetAllTargets !== \"undefined\" && GetAllTargets.mousePosition) {",
-            oind + "      var _oMx = Math.floor((GetAllTargets.mousePosition.x / %s - %s) / 100);" % (SCALE, CAMX),
-            oind + "      var _oMy = Math.floor((GetAllTargets.mousePosition.y / %s - %s) / 100);" % (SCALE, CAMY),
+            oind + "    if (MOD.ShowBuildingOwner && typeof GetAllTargets !== \"undefined\" && GetAllTargets.mouseMapCords) {",
+            oind + "      var _oMx = Math.floor(Math.round(GetAllTargets.mouseMapCords.x) / 100);",
+            oind + "      var _oMy = Math.floor(Math.round(GetAllTargets.mouseMapCords.y) / 100);",
             oind + "      var _oPid = %s.%s;" % (oent, opid),
-            oind + "      var _oEid = %s[%s];" % (oent, MYID),
-            oind + "      if (_oEid === undefined || _oEid === null) { try { _oEid = %s.id; } catch (e) {} }" % oent,
-            oind + "      var _oIsPl = false;",
-            oind + "      try { _oIsPl = !!(World.players && (World.players[_oPid] === %s || %s === World.PLAYER)); } catch (e) {}" % (oent, oent),
-            oind + "      if (!_oIsPl && _oMx === %s.%s && _oMy === %s.%s && _oPid && _oPid !== 0) {" % (oent, ogx, oent, ogy),
-            oind + "        var _oPl = World.players && World.players[_oPid];",
-            oind + "        var _oC = \"#FF3030\";",
-            oind + "        if (World.PLAYER && _oPid === World.PLAYER[%s]) _oC = \"#00FF00\";" % MYID,
-            oind + "        else if (_oPl && World.PLAYER && World.PLAYER.%s !== -1 && _oPl.%s === World.PLAYER.%s) _oC = \"#00FF00\";" % (T_clan, T_clan, T_clan),
-            oind + "        var _oX = (%s + %s.%s * 100 + 50) * %s;" % (CAMX, oent, ogx, SCALE),
-            oind + "        var _oY = (%s + %s.%s * 100 + 50) * %s;" % (CAMY, oent, ogy, SCALE),
+            oind + "      if (%s !== World.PLAYER && _oMx === %s.%s && _oMy === %s.%s && _oPid !== 0) {" % (oent, oent, ogx, oent, ogy),
+            oind + "        var _oCounterX = %s * (%s.%s * 100 + %s + 50);" % (SCALE, oent, ogx, CAMX),
+            oind + "        var _oCounterY = %s * (%s.%s * 100 + %s + 50);" % (SCALE, oent, ogy, CAMY),
             oind + "        ctx.save();",
-            oind + "        ctx.globalAlpha = 1;",
+            oind + "        ctx.lineWidth = 4;",
+            oind + "        ctx.strokeStyle = \"#000000\";",
+            oind + "        ctx.font = \"20px 'Viga', sans-serif\";",
             oind + "        ctx.textAlign = \"center\";",
             oind + "        ctx.textBaseline = \"middle\";",
-            oind + "        ctx.font = \"700 \" + Math.max(14, Math.floor(20 * %s)) + \"px Viga, Arial, sans-serif\";" % SCALE,
-            oind + "        ctx.lineWidth = Math.max(3, Math.floor(4 * %s));" % SCALE,
-            oind + "        ctx.strokeStyle = \"#000000\";",
+            oind + "        ctx.strokeText(_oPid, _oCounterX, _oCounterY);",
+            oind + "        var _oPl = World.players && World.players[_oPid];",
+            oind + "        var _oC = \"#FF0000\";",
+            oind + "        if (World.PLAYER && _oPid === World.PLAYER[%s]) { _oC = \"#00FF00\"; }" % MYID,
+            oind + "        else if (_oPl && _oPl.%s !== -1) { _oC = (World.PLAYER && _oPl.%s === World.PLAYER.%s) ? \"#00FF00\" : \"#FF0000\"; }" % (T_clan, T_clan, T_clan),
             oind + "        ctx.fillStyle = _oC;",
-            oind + "        var _oTxt = \"#\" + _oPid;",
-            oind + "        try { var _oNn = grokGetNick(_oPl); if (_oNn) _oTxt = _oNn; } catch (e) {}",
-            oind + "        ctx.strokeText(_oTxt, _oX, _oY);",
-            oind + "        ctx.fillText(_oTxt, _oX, _oY);",
+            oind + "        ctx.fillText(_oPid, _oCounterX, _oCounterY);",
             oind + "        ctx.restore();",
             oind + "      }",
             oind + "    }",
