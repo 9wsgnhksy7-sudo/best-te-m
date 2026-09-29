@@ -6,10 +6,10 @@
    "label": "key:T4XK-\u2026",
    "active": true,
    "ts": 1790680525,
-   "last_seen": 1790688483,
+   "last_seen": 1790689081,
    "devices": {
     "drdh3z13rmumksbj9": {
-     "last_seen": 1790688483,
+     "last_seen": 1790689081,
      "first_seen": 1790680803,
      "tok": "\"p:IqgwYB0mGtIL5lRIvI\" \"5928\" \"10\""
     }
@@ -93,5 +93,5 @@
    "reason": "two devices"
   }
  ],
- "rev": 78
+ "rev": 79
 }
