@@ -8,6 +8,15 @@
    "ts": 1790665081,
    "last_seen": 0,
    "devices": {}
+  },
+  {
+   "sha": "30c0882bf9dd7d60d4e5e64e5113ad066cc829af6aaeab05271825665fe280f3",
+   "hint": "BAN2-\u2026",
+   "label": "key:BAN2-\u2026 bantest2",
+   "active": true,
+   "ts": 1790665547,
+   "last_seen": 0,
+   "devices": {}
   }
  ],
  "sessions": {},
@@ -25,5 +34,5 @@
    ]
   }
  ],
- "rev": 14
+ "rev": 15
 }
