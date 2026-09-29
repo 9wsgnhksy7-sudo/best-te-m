@@ -5247,6 +5247,10 @@ class AimbotCon {
     }
     send(packet) {
         try {
+            if (packet[0] === 6 && typeof packet[1] === "number")
+                PingAim.onSend(packet[1]);
+        } catch (e) {}
+        try {
             const transport = globalThis.__autoPortAimbotPacketTransport;
             if (typeof transport === "function")
                 transport(packet);
@@ -5351,7 +5355,35 @@ class AimbotCon {
         var me = this.getSelf();
         var target;
         var px, py;
-        if (MOD.resolverType === 1 || MOD.resolverType === "1") {
+        if (MOD.resolverType === "ping") {
+            if (MOD.lockId > -1) {
+                target = GetAllTargets.getPlayerById(MOD.lockId);
+            } else if (MOD.mouseFovEnable) {
+                target = this.findTarget(GetAllTargets.mouseMapCords, MOD.mouseFov);
+            } else {
+                target = this.findTarget(me, 2500);
+            }
+            if (target !== this.currentTarget)
+                PingAim.shots = 0;
+            this.currentTarget = target;
+            PingAim.target = target ? target.id : undefined;
+            if (target == null) {
+                GetAllTargets.lines[0].reset();
+                GetAllTargets.lines[1].reset();
+                return this.lastAngle;
+            }
+            if (target.prevX[0] === -1) {
+                px = target.x;
+                py = target.y;
+            } else {
+                var dt = target.updDt || 62;
+                var vx = (target.x - target.prevX[0]) / dt;
+                var vy = (target.y - target.prevY[0]) / dt;
+                var leadMs = PingAim.latency() + (calculateDistance(me, target) / MOD.distanceCoefficient + MOD.offsetCoefficient) * dt;
+                px = target.x + vx * leadMs;
+                py = target.y + vy * leadMs;
+            }
+        } else if (MOD.resolverType === 1 || MOD.resolverType === "1") {
             target = this.findTarget(me, 2500);
             this.currentTarget = target;
             if (target == null) {
@@ -5577,6 +5609,53 @@ class JitterCon {
         return this.strafeMoves[idx % this.strafeMoves.length];
     }
 }
+var PingAim = {
+    avgPing: 0,
+    startfrom: 1,
+    ping: 90,
+    delay: 1,
+    delaySend: 20,
+    aimsteps: 2,
+    pingSteps: 125,
+    target: undefined,
+    currentPing: 0,
+    ammo: 30,
+    samples: 0,
+    shots: 0,
+    tick: 0,
+    lastSent: -1,
+    lastEcho: undefined,
+    probe: null,
+    onSend: function (a) {
+        var now = Date.now();
+        if (this.probe && now - this.probe.t > 2000)
+            this.probe = null;
+        if (!this.probe && this.lastSent !== -1) {
+            var d = Math.abs(((a - this.lastSent) % 360 + 540) % 360 - 180);
+            if (d >= 30)
+                this.probe = { t: now, a: a };
+        }
+        this.lastSent = a;
+    },
+    onSelf: function (v) {
+        if (typeof v !== "number")
+            return;
+        if (this.probe && Math.abs(((v * 360 / 255 - this.probe.a) % 360 + 540) % 360 - 180) <= 6) {
+            var rtt = Date.now() - this.probe.t;
+            this.probe = null;
+            if (rtt >= 5 && rtt <= 1500) {
+                this.currentPing = rtt;
+                this.samples++;
+                var n = Math.min(this.samples, Math.max(1, this.pingSteps));
+                this.avgPing = this.samples === 1 ? rtt : this.avgPing + (rtt - this.avgPing) / n;
+            }
+        }
+        this.lastEcho = v;
+    },
+    latency: function () {
+        return Math.min(600, this.samples > 0 ? this.avgPing : this.ping) * this.startfrom;
+    }
+};
 var MOD = {
     AimBotEnabled: false,
     AimbotSpearEnabled: false,
@@ -5589,7 +5668,8 @@ var MOD = {
     hidePlayerAngle: false,
     target: "players",
     TargetTeammate: false,
-    resolverType: "linear",
+    resolverType: "ping",
+    pingAimV: 1,
     mouseFovEnable: true,
     mouseFov: 131313,
     distanceCoefficient: 100,
@@ -5681,6 +5761,23 @@ function aimbotTick() {
             } else {
                 Aimbot.send([6, Aimbot.resolve()]);
             }
+        } else if (MOD.resolverType === "ping") {
+            PingAim.tick++;
+            if (PingAim.tick % Math.max(1, Math.round(PingAim.delay)) === 0) {
+                var pAngle = __gk(Aimbot.resolve());
+                var steps = Math.max(1, Math.round(PingAim.aimsteps));
+                var from = PingAim.lastSent === -1 ? pAngle : PingAim.lastSent;
+                var diff = ((pAngle - from) % 360 + 540) % 360 - 180;
+                for (let st = 1; st <= steps; st++) {
+                    let a = Math.round(((from + diff * st / steps) % 360 + 360) % 360);
+                    if (st === 1) Aimbot.send([6, a]);
+                    else setTimeout(function () { if (__gk(MOD.AimBotEnabled)) Aimbot.send([6, a]); }, PingAim.delaySend * (st - 1));
+                }
+                if (MOD.autoFire && Aimbot.hasTarget() && PingAim.shots < PingAim.ammo) {
+                    PingAim.shots++;
+                    setTimeout(function () { Aimbot.send([4]); Aimbot.send([5]); }, PingAim.delaySend * (steps - 1));
+                }
+            }
         } else {
             var angle = __gk(Aimbot.resolve());
             Aimbot.send([6, angle]);
@@ -5727,6 +5824,7 @@ function __isMyAimbotPlayer(o, id) {
 __TOK_WINDOW__.__isMyAimbotPlayer = __isMyAimbotPlayer;
 globalThis.__isMyAimbotPlayer = __isMyAimbotPlayer;
 __TOK_WINDOW__.MOD = MOD;
+__TOK_WINDOW__.PingAim = PingAim;
 __TOK_WINDOW__.Aimbot = Aimbot;
 __TOK_WINDOW__.GetAllTargets = GetAllTargets;
 __TOK_WINDOW__.addEventListener("mousemove", function(event) {
@@ -5793,6 +5891,10 @@ function AimbotLoadConfig() {
             }
         }
         MOD.mouseFovEnable = true;
+        if (!saved || saved.pingAimV !== 1) {
+            MOD.resolverType = "ping";
+            MOD.pingAimV = 1;
+        }
     } catch (e) {}
 }
 function AimbotMenuSetupKey(folder, keyName, displayName) {
@@ -5900,6 +6002,7 @@ function AimbotMenuInit() {
     const aimFolder = menu.addFolder("👑 Aim Bot 👑");
     aimFolder.add(MOD, "AimBotEnabled").name("AimBotEnabled");
     aimFolder.add(MOD, "target", ["players", "ghouls", "all"]).name("Target");
+    aimFolder.add(MOD, "resolverType", ["ping", "linear", "1"]).name("ResolverType");
     aimFolder.add(MOD, "TargetTeammate").name("TargetTeammate");
     aimFolder.add(MOD, "hideAimbotAngle").name("HideAimbotAngle");
     aimFolder.add(MOD, "hidePlayerAngle").name("HidePlayerAngle");
@@ -5911,6 +6014,16 @@ function AimbotMenuInit() {
     aimFolder.add(MOD, "offsetCoefficient", 0, 3, 0.1).name("OffsetCoefficient");
     aimFolder.add(MOD, "autoFire").name("AutoFire");
     aimFolder.add(MOD, "lockId", -1, 120, 1).name("LockId");
+    const pingFolder = menu.addFolder("\ud83d\udce1 Ping Aim \ud83d\udce1");
+    pingFolder.add(PingAim, "currentPing").name("CurrentPing").listen();
+    pingFolder.add(PingAim, "avgPing").name("AvgPing").listen();
+    pingFolder.add(PingAim, "ping", 0, 500, 1).name("Ping (fallback)");
+    pingFolder.add(PingAim, "startfrom", 0, 3, 0.05).name("StartFrom");
+    pingFolder.add(PingAim, "pingSteps", 1, 500, 1).name("PingSteps");
+    pingFolder.add(PingAim, "aimsteps", 1, 5, 1).name("AimSteps");
+    pingFolder.add(PingAim, "delaySend", 0, 100, 1).name("DelaySend");
+    pingFolder.add(PingAim, "delay", 1, 10, 1).name("Delay");
+    pingFolder.add(PingAim, "ammo", 1, 100, 1).name("Ammo");
     const spearFolder = menu.addFolder("\ud83d\udde1 Aimbot Spear \ud83d\udde1");
     spearFolder.add(MOD, "AimbotSpearEnabled").name("AimbotSpearEnabled");
     spearFolder.add(MOD, "spearSpeed", 20, 60, 0.5).name("SpearSpeed");
@@ -6268,6 +6381,19 @@ def port_aimbot(src: str, ent: str | None = None) -> str:
     fields = [part.strip() for part in helper.group('rest').split(',')]
     POS_X, POS_Y = fields[4], fields[5]
     POS_W = fields[6] if len(fields) > 6 else "0"
+    POS_A = "undefined"
+    helper_name = helper.group(0).split('(')[0].strip()
+    mdef = re.search(r'function\s+%s\s*\(([^)]*)\)' % re.escape(helper_name), src)
+    if mdef:
+        params = [x.strip() for x in mdef.group(1).split(',')]
+        body = src[mdef.end():mdef.end() + 1500]
+        mang = re.search(r'\*\s*(%s)\s*\*\s*Math(?:\[[^\]]+\]|\.PI)\s*/\s*255' % W, body)
+        if mang and mang.group(1) in params:
+            k = params.index(mang.group(1)) - 1
+            if 0 <= k < len(fields):
+                POS_A = fields[k]
+    if POS_A == "undefined":
+        print("  WARNING ping aim: angle field not found, ping fallback only")
 
     # Insert directly after the helper: coordinates are already decoded here.
     update_lines = [
@@ -6278,6 +6404,7 @@ def port_aimbot(src: str, ent: str | None = None) -> str:
         "        if (%s === Aimbot.myId()) {" % E_owner,
         "          GetAllTargets.selfPosition = { x: %s, y: %s };" % (POS_X, POS_Y),
         "          GetAllTargets.selfFromPacket = Date.now();",
+        "          try { PingAim.onSelf(%s); } catch (e) {}" % POS_A,
         "        }",
         "        if (Aimbot.dead && %s === Aimbot.myId()) {" % E_owner,
         "          Aimbot.dead = false;",
