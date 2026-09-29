@@ -8,18 +8,6 @@
    "ts": 1790665081,
    "last_seen": 0,
    "devices": {}
-  },
-  {
-   "sha": "7a229c4776d4fc51169e42452c559ebc9d5f7e4b1e6eb75f2743fe5b08e87b27",
-   "hint": "BANT-\u2026",
-   "label": "key:BANT-\u2026 bantest",
-   "active": true,
-   "ts": 1790665291,
-   "last_seen": 1790665429,
-   "devices": {
-    "phoneA-111": 1790665387,
-    "pcB-222": 1790665429
-   }
   }
  ],
  "sessions": {},
@@ -28,8 +16,14 @@
    "sha": "7a229c4776d4fc51169e42452c559ebc9d5f7e4b1e6eb75f2743fe5b08e87b27",
    "device": "pcB-222",
    "ts": 1790665429,
-   "reason": "second_device_within_60s"
+   "reason": "two devices",
+   "hint": "BANT-\u2026",
+   "label": "key:BANT-\u2026 bantest",
+   "devices": [
+    "phoneA-111",
+    "pcB-222"
+   ]
   }
  ],
- "rev": 13
+ "rev": 14
 }
