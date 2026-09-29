@@ -6,12 +6,12 @@
    "label": "key:VJLP-\u2026 Panda228",
    "active": true,
    "ts": 1790680083,
-   "last_seen": 1790685811,
+   "last_seen": 1790686473,
    "devices": {
     "dr7n3bm542omul150i4": {
      "first_seen": 1790680169,
-     "last_seen": 1790685811,
-     "tok": "\"t8rh1HJ@t:<0hOmYeo?M\" \"5756\" \"11\""
+     "last_seen": 1790686473,
+     "tok": "\"t8rh1HJ@t:<0hOmYeo?M\" \"5830\" \"11\""
     }
    }
   },
@@ -82,5 +82,5 @@
    "reason": "two devices"
   }
  ],
- "rev": 65
+ "rev": 66
 }
