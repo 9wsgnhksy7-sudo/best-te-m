@@ -38,9 +38,18 @@
    "ts": 1790689480,
    "last_seen": 0,
    "devices": {}
+  },
+  {
+   "sha": "0e011909dbb3571c3441cbdecbd2973a9ced8be25eeabc59425ddcea58c455b1",
+   "hint": "J95A-\u2026",
+   "label": "key:J95A-\u2026",
+   "active": true,
+   "ts": 1790689677,
+   "last_seen": 0,
+   "devices": {}
   }
  ],
  "sessions": {},
  "bans": [],
- "rev": 92
+ "rev": 93
 }
