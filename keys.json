@@ -15,13 +15,13 @@
    "label": "key:BANT-\u2026 bantest",
    "active": true,
    "ts": 1790665291,
-   "last_seen": 1790665373,
+   "last_seen": 1790665387,
    "devices": {
-    "phoneA-111": 1790665373
+    "phoneA-111": 1790665387
    }
   }
  ],
  "sessions": {},
  "bans": [],
- "rev": 11
+ "rev": 12
 }
