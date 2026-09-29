@@ -44,9 +44,18 @@
      "tok": "\"I4eq2lsjY3YEWTXDXm2=\" \"4124\" \"38\""
     }
    }
+  },
+  {
+   "sha": "a2f006c08c43b1aaaa78adbf303a3dd2f921d1c5c2332e45ff4f687f4f3528f2",
+   "hint": "V6QK-\u2026",
+   "label": "key:V6QK-\u2026",
+   "active": true,
+   "ts": 1790696533,
+   "last_seen": 0,
+   "devices": {}
   }
  ],
  "sessions": {},
  "bans": [],
- "rev": 112
+ "rev": 113
 }
