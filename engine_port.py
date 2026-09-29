@@ -5654,8 +5654,22 @@ var PingAim = {
     deltaPing: 0,
     tickDelay: 0,
     lastSelfT: 0,
+    triggerTol: 8,
+    trig: false,
+    aimA: -1,
+    aimSince: 0,
+    confirmed: function (a) {
+        var now = Date.now();
+        if (this.aimA === -1 || Math.abs(((a - this.aimA) % 360 + 540) % 360 - 180) > this.triggerTol) {
+            this.aimA = a;
+            this.aimSince = now;
+        }
+        var ok = this.lastEcho !== undefined && Math.abs(((this.lastEcho * 360 / 255 - a) % 360 + 540) % 360 - 180) <= this.triggerTol;
+        this.trig = ok || now - this.aimSince > Math.max(400, this.latency() * 2);
+        return this.trig;
+    },
     hudText: function () {
-        return "avgPing: " + Math.round(this.avgPing) + "\ndeltaPing: " + Math.round(this.deltaPing) + "\ndelay: " + this.tickDelay + "\nlead: " + Math.round(this.latency());
+        return "avgPing: " + Math.round(this.avgPing) + "\ndeltaPing: " + Math.round(this.deltaPing) + "\ndelay: " + this.tickDelay + "\nlead: " + Math.round(this.latency()) + (MOD.pingTrigger ? "\ntrigger: " + (this.trig ? "FIRE" : "wait") : "");
     },
     onSend: function (a) {
         var now = Date.now();
@@ -5713,6 +5727,7 @@ var MOD = {
     resolverType: "ping",
     pingAimV: 1,
     pingHud: true,
+    pingTrigger: true,
     mouseFovEnable: true,
     mouseFov: 131313,
     distanceCoefficient: 100,
@@ -5816,7 +5831,7 @@ function aimbotTick() {
                     if (st === 1) Aimbot.send([6, a]);
                     else setTimeout(function () { if (__gk(MOD.AimBotEnabled)) Aimbot.send([6, a]); }, PingAim.delaySend * (st - 1));
                 }
-                if (MOD.autoFire && Aimbot.hasTarget() && PingAim.shots < PingAim.ammo) {
+                if (MOD.autoFire && Aimbot.hasTarget() && PingAim.shots < PingAim.ammo && (!MOD.pingTrigger || PingAim.confirmed(pAngle))) {
                     PingAim.shots++;
                     setTimeout(function () { Aimbot.send([4]); Aimbot.send([5]); }, PingAim.delaySend * (steps - 1));
                 }
@@ -6061,6 +6076,8 @@ function AimbotMenuInit() {
     pingFolder.add(PingAim, "currentPing").name("CurrentPing").listen();
     pingFolder.add(PingAim, "avgPing").name("AvgPing").listen();
     pingFolder.add(MOD, "pingHud").name("ShowPingHud");
+    pingFolder.add(MOD, "pingTrigger").name("PingTrigger");
+    pingFolder.add(PingAim, "triggerTol", 1, 30, 1).name("TriggerTolerance");
     pingFolder.add(PingAim, "ping", 0, 500, 1).name("Ping (fallback)");
     pingFolder.add(PingAim, "startfrom", 0, 3, 0.05).name("StartFrom");
     pingFolder.add(PingAim, "pingSteps", 1, 500, 1).name("PingSteps");
