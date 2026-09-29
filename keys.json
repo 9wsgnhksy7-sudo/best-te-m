@@ -1,15 +1,6 @@
 {
  "keys": [
   {
-   "sha": "1c2bd94d4520ed373028f2873bd4a006fa70fa389f91b661e6b1b79acbc350d2",
-   "hint": "QJ9G-\u2026",
-   "label": "key:QJ9G-\u2026",
-   "active": false,
-   "ts": 1790586385,
-   "last_seen": 0,
-   "devices": {}
-  },
-  {
    "sha": "06762648504a90f074fe1f37dfd0d931189489f5ac825cafa74935c9f907a048",
    "hint": "U7RC-\u2026",
    "label": "key:U7RC-\u2026",
@@ -30,5 +21,5 @@
  ],
  "sessions": {},
  "bans": [],
- "rev": 5
+ "rev": 6
 }
