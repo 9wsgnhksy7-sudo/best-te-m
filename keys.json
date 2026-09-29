@@ -32,52 +32,6 @@
   }
  ],
  "sessions": {},
- "bans": [
-  {
-   "sha": "7a229c4776d4fc51169e42452c559ebc9d5f7e4b1e6eb75f2743fe5b08e87b27",
-   "device": "pcB-222",
-   "ts": 1790665429,
-   "reason": "two devices",
-   "hint": "BANT-\u2026",
-   "label": "key:BANT-\u2026 bantest",
-   "devices": [
-    "phoneA-111",
-    "pcB-222"
-   ]
-  },
-  {
-   "sha": "30c0882bf9dd7d60d4e5e64e5113ad066cc829af6aaeab05271825665fe280f3",
-   "hint": "BAN2-\u2026",
-   "label": "key:BAN2-\u2026 bantest2",
-   "devices": [
-    "phoneA-111",
-    "pcB-222"
-   ],
-   "ts": 1790665630,
-   "reason": "two devices"
-  },
-  {
-   "sha": "9ca34f85eeafe3da5ede44e4f2a2bbf294f73def4c2edf09d78f70407b0b96e8",
-   "hint": "9817-\u2026",
-   "label": "key:9817-\u2026 e2e",
-   "devices": [
-    "e2eDevA",
-    "e2eDevB"
-   ],
-   "ts": 1790667509,
-   "reason": "two devices"
-  },
-  {
-   "sha": "78662dd54819395adbf2c389e21b80da91e92b4922fbcd751473f66defb29c74",
-   "hint": "VJLP-\u2026",
-   "label": "key:VJLP-\u2026 Panda228",
-   "devices": [
-    "dr7n3bm542omul150i4",
-    "dge7szegomumous0k"
-   ],
-   "ts": 1790687102,
-   "reason": "two devices"
-  }
- ],
- "rev": 89
+ "bans": [],
+ "rev": 90
 }
