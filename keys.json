@@ -1,5 +1,15 @@
 {
- "keys": [],
+ "keys": [
+  {
+   "sha": "49b91b93571e2930e31c8ecbfb05a28c7953f6aa04e11897a57a06f3f28ab64a",
+   "hint": "XUHU-\u2026",
+   "label": "key:XUHU-\u2026 Panda228",
+   "active": true,
+   "ts": 1790679692,
+   "last_seen": 0,
+   "devices": {}
+  }
+ ],
  "sessions": {},
  "bans": [
   {
@@ -37,5 +47,5 @@
    "reason": "two devices"
   }
  ],
- "rev": 27
+ "rev": 28
 }
