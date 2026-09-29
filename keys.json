@@ -26,9 +26,18 @@
    "ts": 1790586397,
    "last_seen": 0,
    "devices": {}
+  },
+  {
+   "sha": "f479d0d9289d5728d121c074b7d5bb1e3bba34159aac6d306432b2b1af776cb7",
+   "hint": "TKGU-\u2026",
+   "label": "key:TKGU-\u2026 e2etest",
+   "active": true,
+   "ts": 1790664072,
+   "last_seen": 0,
+   "devices": {}
   }
  ],
  "sessions": {},
  "bans": [],
- "rev": 1
+ "rev": 2
 }
