@@ -1,16 +1,6 @@
 {
- "keys": [
-  {
-   "sha": "a6133fa6ed27d9e7f231822cfe51a00cc7e51591d9a68276e3dbfcaa18f16a7d",
-   "hint": "FULP-\u2026",
-   "label": "key:FULP-\u2026",
-   "active": true,
-   "ts": 1790586397,
-   "last_seen": 0,
-   "devices": {}
-  }
- ],
+ "keys": [],
  "sessions": {},
  "bans": [],
- "rev": 7
+ "rev": 8
 }
