@@ -5,35 +5,47 @@
    "hint": "ARABICA-\u2026",
    "label": "key:ARABICA-\u2026",
    "active": true,
-   "ts": 1790586370
+   "ts": 1790586370,
+   "last_seen": 0,
+   "devices": {}
   },
   {
    "sha": "57da9f40b907b90f87008f411889c4bd88c7500dda5a80ad8611a79dd6b6880c",
    "hint": "CDVK-\u2026",
    "label": "key:CDVK-\u2026",
    "active": true,
-   "ts": 1790586381
+   "ts": 1790586381,
+   "last_seen": 0,
+   "devices": {}
   },
   {
    "sha": "1c2bd94d4520ed373028f2873bd4a006fa70fa389f91b661e6b1b79acbc350d2",
    "hint": "QJ9G-\u2026",
    "label": "key:QJ9G-\u2026",
    "active": true,
-   "ts": 1790586385
+   "ts": 1790586385,
+   "last_seen": 0,
+   "devices": {}
   },
   {
    "sha": "06762648504a90f074fe1f37dfd0d931189489f5ac825cafa74935c9f907a048",
    "hint": "U7RC-\u2026",
    "label": "key:U7RC-\u2026",
    "active": true,
-   "ts": 1790586386
+   "ts": 1790586386,
+   "last_seen": 0,
+   "devices": {}
   },
   {
    "sha": "a6133fa6ed27d9e7f231822cfe51a00cc7e51591d9a68276e3dbfcaa18f16a7d",
    "hint": "FULP-\u2026",
    "label": "key:FULP-\u2026",
    "active": true,
-   "ts": 1790586397
+   "ts": 1790586397,
+   "last_seen": 0,
+   "devices": {}
   }
- ]
+ ],
+ "sessions": {},
+ "bans": []
 }
