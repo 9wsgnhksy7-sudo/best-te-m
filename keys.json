@@ -1,5 +1,15 @@
 {
- "keys": [],
+ "keys": [
+  {
+   "sha": "78662dd54819395adbf2c389e21b80da91e92b4922fbcd751473f66defb29c74",
+   "hint": "VJLP-\u2026",
+   "label": "key:VJLP-\u2026 Panda228",
+   "active": true,
+   "ts": 1790680083,
+   "last_seen": 0,
+   "devices": {}
+  }
+ ],
  "sessions": {},
  "bans": [
   {
@@ -37,5 +47,5 @@
    "reason": "two devices"
   }
  ],
- "rev": 35
+ "rev": 36
 }
