@@ -5324,7 +5324,7 @@ class AimbotCon {
         if (mode === "players" || mode === "all") {
             for (let pid = 1; pid < GetAllTargets.players.length; pid++) {
                 const player = GetAllTargets.players[pid];
-                if (!player || !player.active || player.id === this.myId())
+                if (!player || !player.active || player.id === this.myId() || this.isSelf(player))
                     continue;
                 if (!MOD.TargetTeammate && myTeam !== -1 && myTeam !== -2 &&
                     World.players[player.id] !== undefined &&
@@ -5351,13 +5351,49 @@ class AimbotCon {
         }
         return best;
     }
+    predict(me, target, extraMs, withOffset) {
+        if (target.prevX[0] === -1 || !target.updT)
+            return { x: target.x, y: target.y };
+        var dt = Math.max(target.updDt || 62, 16);
+        if (Date.now() - target.updT > Math.max(300, dt * 2.5))
+            return { x: target.x, y: target.y };
+        var dx = target.x - target.prevX[0];
+        var dy = target.y - target.prevY[0];
+        var step = Math.sqrt(dx * dx + dy * dy);
+        if (step > 300)
+            return { x: target.x, y: target.y };
+        var vx = dx / dt, vy = dy / dt;
+        var sp = step / dt;
+        if (sp > 0.45) {
+            vx *= 0.45 / sp;
+            vy *= 0.45 / sp;
+        }
+        var t = (calculateDistance(me, target) / MOD.distanceCoefficient + (withOffset ? MOD.offsetCoefficient : 0)) * 62 + (extraMs || 0);
+        var lx = vx * t, ly = vy * t;
+        var ll = Math.sqrt(lx * lx + ly * ly);
+        if (ll > 450) {
+            lx *= 450 / ll;
+            ly *= 450 / ll;
+        }
+        return { x: target.x + lx, y: target.y + ly };
+    }
+    lockTarget() {
+        var t = GetAllTargets.getPlayerById(MOD.lockId);
+        return t && t.active && t.x !== -1 ? t : null;
+    }
     resolve() {
         var me = this.getSelf();
         var target;
         var px, py;
+        if (this.dead) {
+            this.currentTarget = null;
+            GetAllTargets.lines[0].reset();
+            GetAllTargets.lines[1].reset();
+            return this.lastAngle;
+        }
         if (MOD.resolverType === "ping") {
             if (MOD.lockId > -1) {
-                target = GetAllTargets.getPlayerById(MOD.lockId);
+                target = this.lockTarget();
             } else if (MOD.mouseFovEnable) {
                 target = this.findTarget(GetAllTargets.mouseMapCords, MOD.mouseFov);
             } else {
@@ -5372,17 +5408,9 @@ class AimbotCon {
                 GetAllTargets.lines[1].reset();
                 return this.lastAngle;
             }
-            if (target.prevX[0] === -1) {
-                px = target.x;
-                py = target.y;
-            } else {
-                var dt = target.updDt || 62;
-                var vx = (target.x - target.prevX[0]) / dt;
-                var vy = (target.y - target.prevY[0]) / dt;
-                var leadMs = PingAim.latency() + (calculateDistance(me, target) / MOD.distanceCoefficient + MOD.offsetCoefficient) * dt;
-                px = target.x + vx * leadMs;
-                py = target.y + vy * leadMs;
-            }
+            var pp = this.predict(me, target, PingAim.latency(), true);
+            px = pp.x;
+            py = pp.y;
         } else if (MOD.resolverType === 1 || MOD.resolverType === "1") {
             target = this.findTarget(me, 2500);
             this.currentTarget = target;
@@ -5391,18 +5419,13 @@ class AimbotCon {
                 GetAllTargets.lines[1].reset();
                 return this.lastAngle;
             }
-            if (target.prevX[0] === -1) {
-                px = target.x;
-                py = target.y;
-            } else {
-                var distancee = calculateDistance(me, target) / MOD.distanceCoefficient;
-                px = target.x + distancee * (target.x - target.prevX[0]);
-                py = target.y + distancee * (target.y - target.prevY[0]);
-            }
+            var p1 = this.predict(me, target, 0, false);
+            px = p1.x;
+            py = p1.y;
         } else {
             // "linear" — donor default
             if (MOD.lockId > -1) {
-                target = GetAllTargets.getPlayerById(MOD.lockId);
+                target = this.lockTarget();
             } else if (MOD.mouseFovEnable) {
                 target = this.findTarget(GetAllTargets.mouseMapCords, MOD.mouseFov);
             } else {
@@ -5414,14 +5437,9 @@ class AimbotCon {
                 GetAllTargets.lines[1].reset();
                 return this.lastAngle;
             }
-            if (target.prevX[0] === -1) {
-                px = target.x;
-                py = target.y;
-            } else {
-                var distance = calculateDistance(me, target) / MOD.distanceCoefficient + MOD.offsetCoefficient;
-                px = target.x + distance * (target.x - target.prevX[0]);
-                py = target.y + distance * (target.y - target.prevY[0]);
-            }
+            var pl = this.predict(me, target, 0, true);
+            px = pl.x;
+            py = pl.y;
         }
         var angle = Math.floor(Math.atan((py - me.y) / (px - me.x)) * 180 / Math.PI);
         if (px < me.x) {
@@ -5611,7 +5629,7 @@ class JitterCon {
 }
 var PingAim = {
     avgPing: 0,
-    startfrom: 1,
+    startfrom: 0.5,
     ping: 90,
     delay: 1,
     delaySend: 20,
