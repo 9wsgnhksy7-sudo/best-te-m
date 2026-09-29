@@ -31,15 +31,6 @@
    }
   },
   {
-   "sha": "08239a6e6f110a141c14520666ede69cc7203bfa84f248ed05c4a95fba5beff8",
-   "hint": "BOSS-\u2026",
-   "label": "key:BOSS-\u2026 Owner",
-   "active": false,
-   "ts": 1790689169,
-   "last_seen": 0,
-   "devices": {}
-  },
-  {
    "sha": "71e40caab2054d4b176d5bdc28ffefc9f0c1c3e40b049a94aa921ae739add78e",
    "hint": "AQSW-\u2026",
    "label": "key:AQSW-\u2026 Me",
@@ -106,5 +97,5 @@
    "reason": "two devices"
   }
  ],
- "rev": 86
+ "rev": 87
 }
