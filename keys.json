@@ -43,6 +43,15 @@
      "tok": "\"]udtZQvH>MhaY3PXY0W3\" \"3902\" \"20\""
     }
    }
+  },
+  {
+   "sha": "08239a6e6f110a141c14520666ede69cc7203bfa84f248ed05c4a95fba5beff8",
+   "hint": "BOSS-\u2026",
+   "label": "key:BOSS-\u2026 Owner",
+   "active": true,
+   "ts": 1790689169,
+   "last_seen": 0,
+   "devices": {}
   }
  ],
  "sessions": {},
@@ -93,5 +102,5 @@
    "reason": "two devices"
   }
  ],
- "rev": 79
+ "rev": 80
 }
