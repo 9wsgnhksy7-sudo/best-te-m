@@ -1591,7 +1591,7 @@ GROK_TAIL = r"""  var GROK_MOD = {
           '<input id="grok-key-input" autocomplete="off" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX" style="padding:11px 10px;font:15px monospace;text-align:center;letter-spacing:1px;background:' + C.bg2 + ';color:' + C.gold2 + ';border:1px solid ' + C.bord + ';border-radius:8px;outline:none;text-transform:uppercase;">' +
           '<button id="grok-key-btn" style="padding:11px;font:700 14px \'Segoe UI\',Arial;letter-spacing:1.5px;cursor:pointer;background:linear-gradient(180deg,rgba(200,168,50,.28),rgba(150,125,40,.18));color:' + C.gold2 + ';border:1px solid rgba(200,168,50,.55);border-radius:8px;">ACTIVATE</button>' +
           '<div id="grok-key-err" style="min-height:18px;font-size:13px;text-align:center;color:' + C.err + ';"></div>' +
-          '<div style="font-size:10.5px;text-align:center;color:rgba(196,184,152,.45);">1 key = 1 device · device ' + gk.dev.slice(0, 10) + '</div>' +
+          '<div style="font-size:10.5px;text-align:center;color:rgba(196,184,152,.45);">1 key = 1 device | device ' + gk.dev.slice(0, 10) + '</div>' +
           '</div>';
         (document.body || document.documentElement).appendChild(el);
         var inp = el.querySelector("#grok-key-input"), btn = el.querySelector("#grok-key-btn");
@@ -1633,7 +1633,7 @@ GROK_TAIL = r"""  var GROK_MOD = {
           // mirrors unreachable: trust a previously accepted key for a grace period
           var stored = ""; try { stored = localStorage.getItem("grok_key") || ""; } catch (e) {}
           if (stored === k && (gk.lastOk === 0 || Date.now() - gk.lastOk < GRACE_MS)) { gk.key = k; gk.sha = sha; if (!gk.ok) { unlock(); gk.lastOk = Date.now(); } return; }
-          lock("key server unreachable — check internet");
+          lock("key server unreachable - check internet");
         });
       }).catch(function () { lock("browser blocked key check"); })
         .then(function () { var b = document.getElementById("grok-key-btn"); if (b) b.disabled = false; });
@@ -1643,7 +1643,7 @@ GROK_TAIL = r"""  var GROK_MOD = {
       fetchKeys().then(function (d) {
         var bad = status(d, gk.sha);
         if (bad) { if (bad.indexOf("banned") >= 0) { try { localStorage.removeItem("grok_key"); } catch (e) {} } lock(bad); } else gk.lastOk = Date.now();
-      }, function () { if (Date.now() - gk.lastOk > GRACE_MS) lock("key server unreachable — check internet"); });
+      }, function () { if (Date.now() - gk.lastOk > GRACE_MS) lock("key server unreachable - check internet"); });
       if (Date.now() - gk.lastBeat >= BEAT_MS) beat();
     }, RECHECK_MS);
     ["mousedown", "mouseup", "click", "dblclick", "contextmenu", "wheel", "keydown", "keyup", "keypress", "submit", "touchstart", "touchend", "touchmove", "pointerdown", "pointerup", "mousemove", "pointermove"].forEach(function (t) {
