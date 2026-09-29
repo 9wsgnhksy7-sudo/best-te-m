@@ -61,6 +61,15 @@
    "ts": 1790689278,
    "last_seen": 0,
    "devices": {}
+  },
+  {
+   "sha": "fb2a4bf60eb61503eeabd7f639a9266fde58c0d0b0db4744eae258cee2cd85ac",
+   "hint": "BBUD-\u2026",
+   "label": "key:BBUD-\u2026",
+   "active": true,
+   "ts": 1790689373,
+   "last_seen": 0,
+   "devices": {}
   }
  ],
  "sessions": {},
@@ -111,5 +120,5 @@
    "reason": "two devices"
   }
  ],
- "rev": 82
+ "rev": 83
 }
