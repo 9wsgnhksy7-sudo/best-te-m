@@ -8,6 +8,15 @@
    "ts": 1790665081,
    "last_seen": 0,
    "devices": {}
+  },
+  {
+   "sha": "9ca34f85eeafe3da5ede44e4f2a2bbf294f73def4c2edf09d78f70407b0b96e8",
+   "hint": "9817-\u2026",
+   "label": "key:9817-\u2026 e2e",
+   "active": true,
+   "ts": 1790666889,
+   "last_seen": 0,
+   "devices": {}
   }
  ],
  "sessions": {},
@@ -36,5 +45,5 @@
    "reason": "two devices"
   }
  ],
- "rev": 17
+ "rev": 18
 }
