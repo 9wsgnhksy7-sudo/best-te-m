@@ -15,13 +15,21 @@
    "label": "key:BANT-\u2026 bantest",
    "active": true,
    "ts": 1790665291,
-   "last_seen": 1790665387,
+   "last_seen": 1790665429,
    "devices": {
-    "phoneA-111": 1790665387
+    "phoneA-111": 1790665387,
+    "pcB-222": 1790665429
    }
   }
  ],
  "sessions": {},
- "bans": [],
- "rev": 12
+ "bans": [
+  {
+   "sha": "7a229c4776d4fc51169e42452c559ebc9d5f7e4b1e6eb75f2743fe5b08e87b27",
+   "device": "pcB-222",
+   "ts": 1790665429,
+   "reason": "second_device_within_60s"
+  }
+ ],
+ "rev": 13
 }
