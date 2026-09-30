@@ -1,7 +1,7 @@
 name: Update mod.js
 on:
   schedule:
-    - cron: '* * * * *'      # GitHub реально запускает ~каждые 5 минут (минимум) — проверка дешёвая
+    - cron: '*/5 * * * *'      # каждые 5 минут — проверка сайта на новый клиент
   workflow_dispatch:         # ручной запуск из вкладки Actions
 
 permissions:
@@ -38,7 +38,11 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"; exit 0
           fi
           SITE="https://dev""ast.io"
-          fetch "$SITE/" /tmp/site_index.html
+          # Cloudflare отрезает IP GitHub-раннеров — тогда проверка честно
+          # пропускается (реальную проверку делает Devin-вотчер).
+          if ! fetch "$SITE/" /tmp/site_index.html; then
+            echo "site unreachable from runner (CF) - skip"; echo "changed=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
           JS=$(grep -o 'js/[A-Za-z0-9_-]*\.js' /tmp/site_index.html | head -1)
           if [ -z "$JS" ]; then echo "no client path in index"; echo "changed=false" >> "$GITHUB_OUTPUT"; exit 0; fi
           echo "client: $JS"
