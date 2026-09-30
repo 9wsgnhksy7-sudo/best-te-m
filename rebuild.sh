@@ -39,11 +39,21 @@ cd "$WORK"
 
 # --- свежий клиент ---
 SITE="https://dev""ast.io"
-curl -fsSL "$SITE/" -o index.html
+UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
+fetch() {
+  # $1 url, $2 dest — прямой запрос, затем публичные прокси
+  # (devast.io отдаёт 403 на IP GitHub Actions через Cloudflare)
+  if curl -fsSL -A "$UA" "$1" -o "$2" && [ -s "$2" ]; then return 0; fi
+  for p in https://api.allorigins.win/raw https://corsproxy.io/; do
+    if curl -fsSL -A "$UA" -G "$p" --data-urlencode "url=$1" -o "$2" && [ -s "$2" ]; then return 0; fi
+  done
+  return 1
+}
+fetch "$SITE/" index.html
 JS=$(grep -o 'js/[A-Za-z0-9_-]*\.js' index.html | head -1)
 [ -n "$JS" ] || { echo "FAIL: client js not found"; exit 1; }
 echo "client: $JS"
-curl -fsSL "$SITE/$JS" -o client.js
+fetch "$SITE/$JS" client.js
 [ -s client.js ] || { echo "FAIL: client empty"; exit 1; }
 
 # --- деобфускация + постпроцесс ---
