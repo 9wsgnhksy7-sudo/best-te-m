@@ -41,12 +41,20 @@ cd "$WORK"
 SITE="https://dev""ast.io"
 UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
 fetch() {
-  # $1 url, $2 dest — прямой запрос, затем публичные прокси
-  # (devast.io отдаёт 403 на IP GitHub Actions через Cloudflare)
+  # $1 url, $2 dest — прямой запрос, curl-impersonate (TLS-отпечаток
+  # Chrome: Cloudflare режет обычный curl с IP GitHub Actions), затем прокси
   if curl -fsSL -A "$UA" "$1" -o "$2" && [ -s "$2" ]; then return 0; fi
-  for p in https://api.allorigins.win/raw https://corsproxy.io/; do
-    if curl -fsSL -A "$UA" -G "$p" --data-urlencode "url=$1" -o "$2" && [ -s "$2" ]; then return 0; fi
+  if [ ! -d /tmp/ci ]; then
+    mkdir -p /tmp/ci
+    curl -fsSL "https://github.com/lwthiker/curl-impersonate/releases/download/v0.6.1/curl-impersonate-v0.6.1.x86_64-linux-gnu.tar.gz" \
+      -o /tmp/ci.tgz && tar -xzf /tmp/ci.tgz -C /tmp/ci || true
+  fi
+  for w in /tmp/ci/curl_chrome* /tmp/ci/curl_ff*; do
+    [ -x "$w" ] || continue
+    if "$w" -fsSL "$1" -o "$2" >/dev/null 2>&1 && [ -s "$2" ]; then return 0; fi
   done
+  if curl -fsSL -A "$UA" -G "https://api.allorigins.win/raw" --data-urlencode "url=$1" -o "$2" && [ -s "$2" ]; then return 0; fi
+  if curl -fsSL -A "$UA" -G "https://api.codetabs.com/v1/proxy" --data-urlencode "quest=$1" -o "$2" && [ -s "$2" ]; then return 0; fi
   return 1
 }
 fetch "$SITE/" index.html
@@ -55,6 +63,14 @@ JS=$(grep -o 'js/[A-Za-z0-9_-]*\.js' index.html | head -1)
 echo "client: $JS"
 fetch "$SITE/$JS" client.js
 [ -s client.js ] || { echo "FAIL: client empty"; exit 1; }
+
+# клиент не менялся — пересборка не нужна (обход: ./rebuild.sh --force)
+NEW_SHA=$(sha256sum client.js | cut -d' ' -f1)
+if [ "${1:-}" != "--force" ] && [ -f "$REPO_DIR/state/client.sha256" ] \
+   && [ "$NEW_SHA" = "$(cat "$REPO_DIR/state/client.sha256")" ] && [ -s "$REPO_DIR/mod.js" ]; then
+  echo "client unchanged ($JS)"
+  exit 0
+fi
 
 # --- деобфускация + постпроцесс ---
 $WEBCRACK client.js -o out

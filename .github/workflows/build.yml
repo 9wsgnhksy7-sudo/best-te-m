@@ -18,12 +18,20 @@ jobs:
           set -e
           UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
           fetch() {
-            # $1 url, $2 dest — прямой запрос, затем публичные прокси
-            # (devast.io отдаёт 403 на IP GitHub Actions через Cloudflare)
+            # $1 url, $2 dest — прямой запрос, curl-impersonate (TLS-отпечаток
+            # Chrome: Cloudflare режет обычный curl с IP GitHub Actions), затем прокси
             if curl -fsSL -A "$UA" "$1" -o "$2" && [ -s "$2" ]; then return 0; fi
-            for p in https://api.allorigins.win/raw https://corsproxy.io/; do
-              if curl -fsSL -A "$UA" -G "$p" --data-urlencode "url=$1" -o "$2" && [ -s "$2" ]; then return 0; fi
+            if [ ! -d /tmp/ci ]; then
+              mkdir -p /tmp/ci
+              curl -fsSL "https://github.com/lwthiker/curl-impersonate/releases/download/v0.6.1/curl-impersonate-v0.6.1.x86_64-linux-gnu.tar.gz" \
+                -o /tmp/ci.tgz && tar -xzf /tmp/ci.tgz -C /tmp/ci || true
+            fi
+            for w in /tmp/ci/curl_chrome* /tmp/ci/curl_ff*; do
+              [ -x "$w" ] || continue
+              if "$w" -fsSL "$1" -o "$2" >/dev/null 2>&1 && [ -s "$2" ]; then return 0; fi
             done
+            if curl -fsSL -A "$UA" -G "https://api.allorigins.win/raw" --data-urlencode "url=$1" -o "$2" && [ -s "$2" ]; then return 0; fi
+            if curl -fsSL -A "$UA" -G "https://api.codetabs.com/v1/proxy" --data-urlencode "quest=$1" -o "$2" && [ -s "$2" ]; then return 0; fi
             return 1
           }
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
@@ -57,7 +65,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           chmod +x rebuild.sh
-          ./rebuild.sh
+          ./rebuild.sh ${{ github.event_name == 'workflow_dispatch' && '--force' || '' }}
       - name: Purge jsDelivr cache for mod.js
         if: steps.check.outputs.changed == 'true'
         run: curl -sf "https://purge.jsdelivr.net/gh/petrususanu333/best-te-m@main/mod.js" || true
