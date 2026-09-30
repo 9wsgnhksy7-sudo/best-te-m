@@ -7387,7 +7387,9 @@ def port_aimbot(src: str, ent: str | None = None) -> str:
     ]))
 
     # ---- 10) AimbotDraw() call in the frame function ----
-    patches.append((i_call, i_call, ["      AimbotDraw();"]))
+    # guarded: a draw failure must not kill the render tail
+    # (scale globals update right after this call).
+    patches.append((i_call, i_call, ["      try { AimbotDraw(); } catch (e) {}"]))
 
     # ---- 11) mod block before the last WaitANDrunHTML(); ----
     run_cands = scan_all(lambda s: s.strip() == 'WaitANDrunHTML();')
@@ -7398,9 +7400,42 @@ def port_aimbot(src: str, ent: str | None = None) -> str:
                     + block.split('\n')
                     + ["/* =================== MOD BLOCK end =================== */"]))
 
-    # apply bottom-up
+    # ---- 12) canvas 2d-context global name ----
+    # Every grafted draw snippet talks to the module-level 2d context var.
+    # The old client kept it as `ctx`; newer builds renamed it, so the name
+    # is detected per build: the module-scope var assigned
+    # `<canvas>.getContext("2d")` without a var keyword, else the var that
+    # receives a getContext-result var (the offscreen swap `X = <off>`).
+    CTXV = None
+    for s in L:
+        mctx = re.match(r'^\s*(%s)\s*=\s*%s\[%s\]\(\s*["\']2d["\']\s*\)'
+                        % (W, W, W), s)
+        if mctx and not re.match(r'\s*(?:var|let|const)\b', s):
+            CTXV = mctx.group(1)
+            break
+    if CTXV is None:
+        _gcs = set()
+        for s in L:
+            mctx = re.match(
+                r'^\s*(?:var|let|const)\s+(%s)\s*=\s*%s\[%s\]\(\s*["\']2d["\']\s*\)'
+                % (W, W, W), s)
+            if mctx:
+                _gcs.add(mctx.group(1))
+        _tgt = Counter()
+        for s in L:
+            mctx = re.match(r'^\s*(%s)\s*=\s*(%s)\s*;' % (W, W), s)
+            if mctx and mctx.group(2) in _gcs:
+                _tgt[mctx.group(1)] += 1
+        if _tgt:
+            CTXV = _tgt.most_common(1)[0][0]
+    if CTXV is None:
+        fail("canvas 2d context global (`X = <canvas>[m]('2d')`)")
+
+    # apply bottom-up, rewriting bare `ctx` in injected lines to the
+    # detected context var
+    _ctx_rx = re.compile(r'\bctx\b')
     for start, end, new in sorted(patches, key=lambda p: -p[0]):
-        L[start:end] = new
+        L[start:end] = [_ctx_rx.sub(CTXV, ln) for ln in new]
 
     return '\n'.join(L)
 
